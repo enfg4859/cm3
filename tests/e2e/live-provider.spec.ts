@@ -8,7 +8,7 @@ test.describe('@live twelvedata provider', () => {
   test('boots the dashboard with a single live quote and candle fetch', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByText('QUANT_ATELIER')).toBeVisible();
+    await expect(page.getByText('Chart Meister')).toBeVisible();
     await expect(page.getByRole('banner').getByText(/Twelve Data/)).toBeVisible();
     await expect(page.getByText('시그널 요약')).toBeVisible();
     await expect(page.locator('.chart-panel canvas').first()).toBeVisible();

@@ -95,8 +95,7 @@ onBeforeUnmount(() => {
   <v-app class="quant-app">
     <header class="top-bar">
       <div class="brand-lockup">
-        <div class="brand-lockup__title">QUANT_ATELIER</div>
-        <div class="brand-lockup__meta">{{ t('app.brandMeta') }}</div>
+        <div class="brand-lockup__title">Chart Meister</div>
       </div>
 
       <SymbolSearch

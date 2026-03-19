@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 async function waitForDashboard(page: import('@playwright/test').Page) {
-  await expect(page.getByText('QUANT_ATELIER')).toBeVisible();
+  await expect(page.getByText('Chart Meister')).toBeVisible();
   await expect(page.getByText('시그널 요약')).toBeVisible();
   await expect(page.locator('.chart-panel canvas').first()).toBeVisible();
 }
@@ -11,7 +11,6 @@ test.describe('dashboard', () => {
     await page.goto('/');
     await waitForDashboard(page);
 
-    await expect(page.getByText('기술적 분석 작업공간')).toBeVisible();
     await expect(page.getByRole('banner').getByText('모의 데이터')).toBeVisible();
     await expect(page.getByText('표시 레이어')).toBeVisible();
     await expect(page.getByRole('button', { name: 'RSI 14 설명' })).toBeVisible();
@@ -31,12 +30,12 @@ test.describe('dashboard', () => {
     await waitForDashboard(page);
 
     await page.getByRole('button', { name: 'EN' }).click();
-    await expect(page.getByText('Technical Analysis Workspace')).toBeVisible();
+    await expect(page.getByText('Chart Meister')).toBeVisible();
     await expect(page.getByText('Signal Summary')).toBeVisible();
     await expect(page.getByPlaceholder('Search symbols: AAPL, NVDA, BTCUSD')).toBeVisible();
 
     await page.getByRole('button', { name: 'KR' }).click();
-    await expect(page.getByText('기술적 분석 작업공간')).toBeVisible();
+    await expect(page.getByText('Chart Meister')).toBeVisible();
     await expect(page.getByText('시그널 요약')).toBeVisible();
   });
 

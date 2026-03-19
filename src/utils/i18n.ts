@@ -9,7 +9,6 @@ const messages: Record<AppLocale, Record<string, string>> = {
   ko: {
     'lang.ko': 'KR',
     'lang.en': 'EN',
-    'app.brandMeta': '기술적 분석 작업공간',
     'provider.live': 'Twelve Data 실시간',
     'provider.mock': '모의 데이터',
     'market.awaiting': '데이터 대기 중',
@@ -25,7 +24,7 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'side.logs': '로그',
     'state.loading.label': '시스템 로딩',
     'state.error.label': '시스템 오류',
-    'state.empty.label': '퀀트 아틀리에',
+    'state.empty.label': 'Chart Meister',
     'state.retry': '다시 시도',
     'state.loadDemo': '데모 심볼 불러오기',
     'search.placeholder': '심볼 검색: AAPL, NVDA, BTCUSD',
@@ -118,7 +117,6 @@ const messages: Record<AppLocale, Record<string, string>> = {
   en: {
     'lang.ko': 'KR',
     'lang.en': 'EN',
-    'app.brandMeta': 'Technical Analysis Workspace',
     'provider.live': 'Twelve Data Live',
     'provider.mock': 'Mock Provider',
     'market.awaiting': 'Awaiting feed',
@@ -134,7 +132,7 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'side.logs': 'Logs',
     'state.loading.label': 'System Loading',
     'state.error.label': 'System Error',
-    'state.empty.label': 'Quant Atelier',
+    'state.empty.label': 'Chart Meister',
     'state.retry': 'Retry Request',
     'state.loadDemo': 'Load Demo Symbol',
     'search.placeholder': 'Search symbols: AAPL, NVDA, BTCUSD',
