@@ -32,6 +32,11 @@ test.describe('dashboard', () => {
     await page.goto('/');
     await waitForDashboard(page);
 
+    await page.getByRole('button', { name: '모드 설명 열기' }).click();
+    await expect(
+      page.getByText('모드는 어떤 분석 레짐을 기본으로 볼지 정합니다. intraday는 세션 구조와 참여도, swing은 큰 추세와 상대강도 해석에 맞춰집니다.')
+    ).toBeVisible();
+
     await page.getByRole('button', { name: '시그널 요약 설명 열기' }).click();
     await expect(
       page.getByText('시그널 요약은 각 카테고리의 상승, 하락, 중립 기여도를 가중치에 맞게 합산해 계산합니다.')

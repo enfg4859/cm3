@@ -19,6 +19,7 @@ import {
   translateErrorMessage,
   useI18n
 } from '@/utils/i18n';
+import InfoPopoverButton from '@/components/InfoPopoverButton.vue';
 import { useMarketStore } from '@/stores/market';
 import DashboardState from '@/components/DashboardState.vue';
 import IndicatorToggles from '@/components/IndicatorToggles.vue';
@@ -89,6 +90,53 @@ const localizedOpeningRangeStatus = computed(() =>
   analysisContext.value ? localizeAnalysisStatus(analysisContext.value.openingRange.status) : '--'
 );
 const localizedApiStatus = computed(() => localizeApiStatus(store.health?.status ?? 'ok'));
+const controlExplanations = computed(() => ({
+  mode: {
+    title: t('controls.mode'),
+    description: t('controls.info.mode'),
+    details: [
+      t('controls.info.currentMode', { value: t(`controls.modeValue.${store.mode}`) }),
+      t(`controls.info.mode.${store.mode}`)
+    ]
+  },
+  session: {
+    title: t('controls.session'),
+    description: t('controls.info.session'),
+    details: [
+      t('controls.info.currentSession', { value: t(`controls.sessionValue.${store.session}`) }),
+      t(`controls.info.session.${store.session}`)
+    ]
+  },
+  benchmark: {
+    title: t('controls.benchmark'),
+    description: t('controls.info.benchmark'),
+    details: [
+      t('controls.info.currentBenchmark', { value: store.benchmark ?? '--' }),
+      t('controls.info.benchmark.usOnly'),
+      t('controls.info.benchmark.unavailable')
+    ]
+  },
+  openingRange: {
+    title: t('controls.openingRange'),
+    description: t('controls.info.openingRange'),
+    details: [
+      t('controls.info.currentOpeningRange', {
+        value: store.orMinutes === null ? t('controls.off') : `${store.orMinutes}m`
+      }),
+      t('controls.info.currentOpeningRangeStatus', { status: localizedOpeningRangeStatus.value }),
+      t('controls.info.openingRange.restricted')
+    ]
+  },
+  anchor: {
+    title: t('controls.anchor'),
+    description: t('controls.info.anchor'),
+    details: [
+      t('controls.info.currentAnchor', { value: localizedAnchorLabel.value }),
+      t('controls.info.anchor.sticky'),
+      ...(store.anchorType === 'manual' ? [t('controls.info.anchor.manual')] : [])
+    ]
+  }
+}));
 
 function runSearch(symbol: string) {
   void store.loadDashboard(symbol);
@@ -300,7 +348,15 @@ onBeforeUnmount(() => {
               </div>
 
               <div>
-                <div class="muted-label mb-3">{{ t('controls.mode') }}</div>
+                <div class="muted-label mb-3 control-label-row">
+                  <span>{{ t('controls.mode') }}</span>
+                  <InfoPopoverButton
+                    :title="controlExplanations.mode.title"
+                    :description="controlExplanations.mode.description"
+                    :details="controlExplanations.mode.details"
+                    :button-label="t('common.openInfoFor', { label: t('controls.mode') })"
+                  />
+                </div>
                 <div class="pill-row">
                   <v-btn
                     v-for="mode in ANALYSIS_MODE_OPTIONS"
@@ -316,7 +372,15 @@ onBeforeUnmount(() => {
 
               <div class="indicator-grid">
                 <div>
-                  <div class="muted-label mb-3">{{ t('controls.session') }}</div>
+                  <div class="muted-label mb-3 control-label-row">
+                    <span>{{ t('controls.session') }}</span>
+                    <InfoPopoverButton
+                      :title="controlExplanations.session.title"
+                      :description="controlExplanations.session.description"
+                      :details="controlExplanations.session.details"
+                      :button-label="t('common.openInfoFor', { label: t('controls.session') })"
+                    />
+                  </div>
                   <div class="pill-row">
                     <v-btn
                       v-for="session in SESSION_OPTIONS"
@@ -331,7 +395,15 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div>
-                  <div class="muted-label mb-3">{{ t('controls.benchmark') }}</div>
+                  <div class="muted-label mb-3 control-label-row">
+                    <span>{{ t('controls.benchmark') }}</span>
+                    <InfoPopoverButton
+                      :title="controlExplanations.benchmark.title"
+                      :description="controlExplanations.benchmark.description"
+                      :details="controlExplanations.benchmark.details"
+                      :button-label="t('common.openInfoFor', { label: t('controls.benchmark') })"
+                    />
+                  </div>
                   <div class="pill-row">
                     <v-btn
                       v-for="benchmark in BENCHMARK_OPTIONS"
@@ -348,7 +420,15 @@ onBeforeUnmount(() => {
 
               <div class="indicator-grid">
                 <div>
-                  <div class="muted-label mb-3">{{ t('controls.openingRange') }}</div>
+                  <div class="muted-label mb-3 control-label-row">
+                    <span>{{ t('controls.openingRange') }}</span>
+                    <InfoPopoverButton
+                      :title="controlExplanations.openingRange.title"
+                      :description="controlExplanations.openingRange.description"
+                      :details="controlExplanations.openingRange.details"
+                      :button-label="t('common.openInfoFor', { label: t('controls.openingRange') })"
+                    />
+                  </div>
                   <div class="pill-row">
                     <v-btn
                       class="pill-button"
@@ -371,7 +451,15 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div>
-                  <div class="muted-label mb-3">{{ t('controls.anchor') }}</div>
+                  <div class="muted-label mb-3 control-label-row">
+                    <span>{{ t('controls.anchor') }}</span>
+                    <InfoPopoverButton
+                      :title="controlExplanations.anchor.title"
+                      :description="controlExplanations.anchor.description"
+                      :details="controlExplanations.anchor.details"
+                      :button-label="t('common.openInfoFor', { label: t('controls.anchor') })"
+                    />
+                  </div>
                   <div class="pill-row">
                     <v-btn
                       v-for="anchorType in ANCHOR_TYPE_OPTIONS"

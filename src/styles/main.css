@@ -345,6 +345,12 @@ body {
   gap: 6px;
 }
 
+.control-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .indicator-panel__info {
   width: 24px;
   height: 24px;
