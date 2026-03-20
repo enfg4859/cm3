@@ -56,6 +56,40 @@ export function buildSummaryOverviewExplanation(summary: SignalSummary, t: Trans
   };
 }
 
+export function buildSummaryHighlights(summary: SignalSummary, t: TranslateFn): string[] {
+  const orderedCategories = Object.entries(summary.categories)
+    .filter(([, category]) => category.weight > 0)
+    .sort(([, left], [, right]) => {
+      const leftStrength = Math.max(left.contribution.bullish, left.contribution.bearish) - left.contribution.neutral;
+      const rightStrength = Math.max(right.contribution.bullish, right.contribution.bearish) - right.contribution.neutral;
+      return rightStrength - leftStrength;
+    });
+
+  const highlights = orderedCategories
+    .slice(0, 3)
+    .map(([key, category]) => {
+      const message = t(`summary.highlight.${key}.${category.status}`);
+      const dominantContribution = [
+        ['bullish', category.contribution.bullish],
+        ['bearish', category.contribution.bearish],
+        ['neutral', category.contribution.neutral]
+      ].sort((left, right) => right[1] - left[1])[0];
+
+      return t('summary.highlights.item', {
+        category: t(`summary.category.${key}`),
+        message: message.startsWith('summary.highlight.')
+          ? t(`summary.categoryStatus.${category.status}`)
+          : message,
+        weight: category.weight.toFixed(0),
+        dominantLabel: t(`summary.categoryStatus.${dominantContribution[0]}`),
+        dominant: dominantContribution[1].toFixed(1)
+      });
+    })
+    .filter((text) => !text.startsWith('summary.highlight.'));
+
+  return highlights.length ? highlights : [t('summary.highlights.empty')];
+}
+
 export function buildSignalCategoryExplanation(
   key: SignalCategoryKey,
   category: SignalCategorySummary,

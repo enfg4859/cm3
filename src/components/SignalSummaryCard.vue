@@ -2,7 +2,11 @@
 import { computed } from 'vue';
 import type { SignalCategoryKey, SignalSummary } from '@shared/market';
 import InfoPopoverButton from '@/components/InfoPopoverButton.vue';
-import { buildSignalCategoryExplanation, buildSummaryOverviewExplanation } from '@/utils/explanations';
+import {
+  buildSignalCategoryExplanation,
+  buildSummaryHighlights,
+  buildSummaryOverviewExplanation
+} from '@/utils/explanations';
 import { localizeSignalCategory, localizeSignalCategoryStatus, useI18n } from '@/utils/i18n';
 
 const props = defineProps<{
@@ -10,6 +14,7 @@ const props = defineProps<{
 }>();
 const { t } = useI18n();
 const summaryExplanation = computed(() => buildSummaryOverviewExplanation(props.summary, t));
+const summaryHighlights = computed(() => buildSummaryHighlights(props.summary, t));
 function getCategoryExplanation(key: SignalCategoryKey, category: SignalSummary['categories'][SignalCategoryKey]) {
   return buildSignalCategoryExplanation(key, category, t);
 }
@@ -71,6 +76,18 @@ const orderedCategories = computed(() =>
         </div>
         <div class="text-medium-emphasis" style="font-size: 0.82rem;">
           {{ t('summary.confidence') }} {{ t(`summary.confidence.${summary.confidence}`) }}
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-highlights mb-4">
+      <div class="d-flex flex-column ga-2">
+        <div
+          v-for="highlight in summaryHighlights"
+          :key="highlight"
+          class="summary-highlight"
+        >
+          {{ highlight }}
         </div>
       </div>
     </div>

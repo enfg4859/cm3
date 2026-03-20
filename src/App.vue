@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import {
   ANALYSIS_MODE_OPTIONS,
   ANCHOR_TYPE_OPTIONS,
@@ -40,6 +40,7 @@ const sideRailItems = computed(() => [
 ]);
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
+const advancedControlsExpanded = ref(false);
 
 const quote = computed(() => store.quote);
 const signalSummary = computed(() => store.signalSummary);
@@ -90,6 +91,14 @@ const localizedOpeningRangeStatus = computed(() =>
   analysisContext.value ? localizeAnalysisStatus(analysisContext.value.openingRange.status) : '--'
 );
 const localizedApiStatus = computed(() => localizeApiStatus(store.health?.status ?? 'ok'));
+const controlSummaryChips = computed(() => [
+  t('controls.summary.session', { value: t(`controls.sessionValue.${store.session}`) }),
+  t('controls.summary.benchmark', { value: store.benchmark ?? '--' }),
+  t('controls.summary.openingRange', {
+    value: store.orMinutes === null ? t('controls.off') : `${store.orMinutes}m`
+  }),
+  t('controls.summary.anchor', { value: t(`controls.anchorType.${store.anchorType}`) })
+]);
 const controlExplanations = computed(() => ({
   mode: {
     title: t('controls.mode'),
@@ -317,164 +326,204 @@ onBeforeUnmount(() => {
             </v-card>
 
             <v-card class="control-cluster surface-panel surface-panel--high" rounded="xl">
-              <div>
-                <div class="muted-label mb-3">{{ t('controls.range') }}</div>
-                <div class="pill-row">
-                  <v-btn
-                    v-for="range in RANGE_OPTIONS"
-                    :key="range"
-                    class="pill-button"
-                    :class="{ 'pill-button--active': store.range === range }"
-                    @click="store.setRange(range)"
-                  >
-                    {{ range }}
-                  </v-btn>
-                </div>
-              </div>
-
-              <div>
-                <div class="muted-label mb-3">{{ t('controls.interval') }}</div>
-                <div class="pill-row">
-                  <v-btn
-                    v-for="interval in INTERVAL_OPTIONS"
-                    :key="interval"
-                    class="pill-button"
-                    :class="{ 'pill-button--active': store.interval === interval }"
-                    @click="store.setInterval(interval)"
-                  >
-                    {{ interval }}
-                  </v-btn>
-                </div>
-              </div>
-
-              <div>
-                <div class="muted-label mb-3 control-label-row">
-                  <span>{{ t('controls.mode') }}</span>
-                  <InfoPopoverButton
-                    :title="controlExplanations.mode.title"
-                    :description="controlExplanations.mode.description"
-                    :details="controlExplanations.mode.details"
-                    :button-label="t('common.openInfoFor', { label: t('controls.mode') })"
-                  />
-                </div>
-                <div class="pill-row">
-                  <v-btn
-                    v-for="mode in ANALYSIS_MODE_OPTIONS"
-                    :key="mode"
-                    class="pill-button"
-                    :class="{ 'pill-button--active': store.mode === mode }"
-                    @click="store.setMode(mode)"
-                  >
-                    {{ t(`controls.modeValue.${mode}`) }}
-                  </v-btn>
-                </div>
-              </div>
-
-              <div class="indicator-grid">
-                <div>
-                  <div class="muted-label mb-3 control-label-row">
-                    <span>{{ t('controls.session') }}</span>
-                    <InfoPopoverButton
-                      :title="controlExplanations.session.title"
-                      :description="controlExplanations.session.description"
-                      :details="controlExplanations.session.details"
-                      :button-label="t('common.openInfoFor', { label: t('controls.session') })"
-                    />
+              <div class="control-cluster__grid">
+                <section class="control-section">
+                  <div class="control-section__header">
+                    <div class="muted-label">{{ t('controls.range') }}</div>
                   </div>
-                  <div class="pill-row">
+                  <div class="pill-row pill-row--compact">
                     <v-btn
-                      v-for="session in SESSION_OPTIONS"
-                      :key="session"
+                      v-for="range in RANGE_OPTIONS"
+                      :key="range"
                       class="pill-button"
-                      :class="{ 'pill-button--active': store.session === session }"
-                      @click="store.setSession(session)"
+                      :class="{ 'pill-button--active': store.range === range }"
+                      @click="store.setRange(range)"
                     >
-                      {{ t(`controls.sessionValue.${session}`) }}
+                      {{ range }}
                     </v-btn>
                   </div>
-                </div>
+                </section>
 
-                <div>
-                  <div class="muted-label mb-3 control-label-row">
-                    <span>{{ t('controls.benchmark') }}</span>
-                    <InfoPopoverButton
-                      :title="controlExplanations.benchmark.title"
-                      :description="controlExplanations.benchmark.description"
-                      :details="controlExplanations.benchmark.details"
-                      :button-label="t('common.openInfoFor', { label: t('controls.benchmark') })"
-                    />
+                <section class="control-section">
+                  <div class="control-section__header">
+                    <div class="muted-label">{{ t('controls.interval') }}</div>
                   </div>
-                  <div class="pill-row">
+                  <div class="pill-row pill-row--compact">
                     <v-btn
-                      v-for="benchmark in BENCHMARK_OPTIONS"
-                      :key="benchmark"
+                      v-for="interval in INTERVAL_OPTIONS"
+                      :key="interval"
                       class="pill-button"
-                      :class="{ 'pill-button--active': store.benchmark === benchmark }"
-                      @click="store.setBenchmark(benchmark)"
+                      :class="{ 'pill-button--active': store.interval === interval }"
+                      @click="store.setInterval(interval)"
                     >
-                      {{ benchmark }}
+                      {{ interval }}
                     </v-btn>
                   </div>
-                </div>
-              </div>
+                </section>
 
-              <div class="indicator-grid">
-                <div>
-                  <div class="muted-label mb-3 control-label-row">
-                    <span>{{ t('controls.openingRange') }}</span>
-                    <InfoPopoverButton
-                      :title="controlExplanations.openingRange.title"
-                      :description="controlExplanations.openingRange.description"
-                      :details="controlExplanations.openingRange.details"
-                      :button-label="t('common.openInfoFor', { label: t('controls.openingRange') })"
-                    />
+                <section class="control-section">
+                  <div class="control-section__header">
+                    <div class="muted-label control-label-row">
+                      <span>{{ t('controls.mode') }}</span>
+                      <InfoPopoverButton
+                        :title="controlExplanations.mode.title"
+                        :description="controlExplanations.mode.description"
+                        :details="controlExplanations.mode.details"
+                        :button-label="t('common.openInfoFor', { label: t('controls.mode') })"
+                      />
+                    </div>
                   </div>
-                  <div class="pill-row">
+                  <div class="pill-row pill-row--compact">
                     <v-btn
+                      v-for="mode in ANALYSIS_MODE_OPTIONS"
+                      :key="mode"
                       class="pill-button"
-                      :class="{ 'pill-button--active': store.orMinutes === null }"
-                      @click="store.setOpeningRange(null)"
+                      :class="{ 'pill-button--active': store.mode === mode }"
+                      @click="store.setMode(mode)"
                     >
-                      {{ t('controls.off') }}
-                    </v-btn>
-                    <v-btn
-                      v-for="minutes in OPENING_RANGE_OPTIONS"
-                      :key="minutes"
-                      class="pill-button"
-                      :class="{ 'pill-button--active': store.orMinutes === minutes }"
-                      :disabled="!analysisContext.openingRange.allowedMinutes.includes(minutes)"
-                      @click="store.setOpeningRange(minutes)"
-                    >
-                      {{ minutes }}m
+                      {{ t(`controls.modeValue.${mode}`) }}
                     </v-btn>
                   </div>
-                </div>
+                </section>
 
-                <div>
-                  <div class="muted-label mb-3 control-label-row">
-                    <span>{{ t('controls.anchor') }}</span>
-                    <InfoPopoverButton
-                      :title="controlExplanations.anchor.title"
-                      :description="controlExplanations.anchor.description"
-                      :details="controlExplanations.anchor.details"
-                      :button-label="t('common.openInfoFor', { label: t('controls.anchor') })"
-                    />
-                  </div>
-                  <div class="pill-row">
+                <section class="control-section control-section--wide control-section--advanced">
+                  <div class="control-section__header control-section__header--advanced">
+                    <div class="control-section__advanced-meta">
+                      <div class="muted-label">{{ t('controls.advanced.title') }}</div>
+                      <div class="control-section__summary">
+                        <span
+                          v-for="summaryChip in controlSummaryChips"
+                          :key="summaryChip"
+                          class="control-summary-chip"
+                        >
+                          {{ summaryChip }}
+                        </span>
+                      </div>
+                    </div>
                     <v-btn
-                      v-for="anchorType in ANCHOR_TYPE_OPTIONS"
-                      :key="anchorType"
-                      class="pill-button"
-                      :class="{ 'pill-button--active': store.anchorType === anchorType }"
-                      @click="store.setAnchorType(anchorType)"
+                      class="pill-button control-toggle-button"
+                      :append-icon="advancedControlsExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                      @click="advancedControlsExpanded = !advancedControlsExpanded"
                     >
-                      {{ t(`controls.anchorType.${anchorType}`) }}
+                      {{ advancedControlsExpanded ? t('controls.advanced.hide') : t('controls.advanced.show') }}
                     </v-btn>
                   </div>
-                  <div v-if="store.anchorType === 'manual'" class="text-medium-emphasis mt-2" style="font-size: 0.8rem;">
-                    {{ store.manualAnchorArmed ? t('controls.anchorHint.pick') : t('controls.anchorHint.repick') }}
-                  </div>
-                </div>
+
+                  <v-expand-transition>
+                    <div v-show="advancedControlsExpanded" class="control-cluster__advanced">
+                      <section class="control-section">
+                        <div class="control-section__header">
+                          <div class="muted-label control-label-row">
+                            <span>{{ t('controls.session') }}</span>
+                            <InfoPopoverButton
+                              :title="controlExplanations.session.title"
+                              :description="controlExplanations.session.description"
+                              :details="controlExplanations.session.details"
+                              :button-label="t('common.openInfoFor', { label: t('controls.session') })"
+                            />
+                          </div>
+                        </div>
+                        <div class="pill-row pill-row--compact">
+                          <v-btn
+                            v-for="session in SESSION_OPTIONS"
+                            :key="session"
+                            class="pill-button"
+                            :class="{ 'pill-button--active': store.session === session }"
+                            @click="store.setSession(session)"
+                          >
+                            {{ t(`controls.sessionValue.${session}`) }}
+                          </v-btn>
+                        </div>
+                      </section>
+
+                      <section class="control-section">
+                        <div class="control-section__header">
+                          <div class="muted-label control-label-row">
+                            <span>{{ t('controls.benchmark') }}</span>
+                            <InfoPopoverButton
+                              :title="controlExplanations.benchmark.title"
+                              :description="controlExplanations.benchmark.description"
+                              :details="controlExplanations.benchmark.details"
+                              :button-label="t('common.openInfoFor', { label: t('controls.benchmark') })"
+                            />
+                          </div>
+                        </div>
+                        <div class="pill-row pill-row--compact">
+                          <v-btn
+                            v-for="benchmark in BENCHMARK_OPTIONS"
+                            :key="benchmark"
+                            class="pill-button"
+                            :class="{ 'pill-button--active': store.benchmark === benchmark }"
+                            @click="store.setBenchmark(benchmark)"
+                          >
+                            {{ benchmark }}
+                          </v-btn>
+                        </div>
+                      </section>
+
+                      <section class="control-section">
+                        <div class="control-section__header">
+                          <div class="muted-label control-label-row">
+                            <span>{{ t('controls.openingRange') }}</span>
+                            <InfoPopoverButton
+                              :title="controlExplanations.openingRange.title"
+                              :description="controlExplanations.openingRange.description"
+                              :details="controlExplanations.openingRange.details"
+                              :button-label="t('common.openInfoFor', { label: t('controls.openingRange') })"
+                            />
+                          </div>
+                        </div>
+                        <div class="pill-row pill-row--compact">
+                          <v-btn
+                            class="pill-button"
+                            :class="{ 'pill-button--active': store.orMinutes === null }"
+                            @click="store.setOpeningRange(null)"
+                          >
+                            {{ t('controls.off') }}
+                          </v-btn>
+                          <v-btn
+                            v-for="minutes in OPENING_RANGE_OPTIONS"
+                            :key="minutes"
+                            class="pill-button"
+                            :class="{ 'pill-button--active': store.orMinutes === minutes }"
+                            :disabled="!analysisContext.openingRange.allowedMinutes.includes(minutes)"
+                            @click="store.setOpeningRange(minutes)"
+                          >
+                            {{ minutes }}m
+                          </v-btn>
+                        </div>
+                      </section>
+
+                      <section class="control-section control-section--wide">
+                        <div class="control-section__header">
+                          <div class="muted-label control-label-row">
+                            <span>{{ t('controls.anchor') }}</span>
+                            <InfoPopoverButton
+                              :title="controlExplanations.anchor.title"
+                              :description="controlExplanations.anchor.description"
+                              :details="controlExplanations.anchor.details"
+                              :button-label="t('common.openInfoFor', { label: t('controls.anchor') })"
+                            />
+                          </div>
+                        </div>
+                        <div class="pill-row pill-row--compact">
+                          <v-btn
+                            v-for="anchorType in ANCHOR_TYPE_OPTIONS"
+                            :key="anchorType"
+                            class="pill-button"
+                            :class="{ 'pill-button--active': store.anchorType === anchorType }"
+                            @click="store.setAnchorType(anchorType)"
+                          >
+                            {{ t(`controls.anchorType.${anchorType}`) }}
+                          </v-btn>
+                        </div>
+                        <div v-if="store.anchorType === 'manual'" class="control-section__hint text-medium-emphasis">
+                          {{ store.manualAnchorArmed ? t('controls.anchorHint.pick') : t('controls.anchorHint.repick') }}
+                        </div>
+                      </section>
+                    </div>
+                  </v-expand-transition>
+                </section>
               </div>
             </v-card>
           </section>
