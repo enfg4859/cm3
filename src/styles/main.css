@@ -36,8 +36,8 @@ body {
 
 .quant-app {
   background:
-    radial-gradient(circle at 15% 15%, rgba(128, 131, 255, 0.12), transparent 30%),
-    radial-gradient(circle at 80% 85%, rgba(78, 222, 163, 0.1), transparent 24%),
+    radial-gradient(circle at 15% 15%, rgba(128, 131, 255, 0.08), transparent 45%),
+    radial-gradient(circle at 80% 85%, rgba(78, 222, 163, 0.06), transparent 35%),
     var(--qa-background);
 }
 
@@ -51,8 +51,9 @@ body {
   gap: 24px;
   height: 72px;
   padding: 0 28px;
-  background: rgba(11, 19, 38, 0.94);
-  backdrop-filter: blur(18px);
+  background: rgba(11, 19, 38, 0.75);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .brand-lockup {
@@ -77,7 +78,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: rgba(11, 19, 38, 0.9);
+  background: rgba(11, 19, 38, 0.75);
+  backdrop-filter: blur(24px);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .side-rail__button {
@@ -104,7 +107,8 @@ body {
 
 .side-rail__label {
   font-size: 0.62rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.08em;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
@@ -117,9 +121,10 @@ body {
 }
 
 .surface-panel {
-  background: rgba(19, 27, 46, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  box-shadow: 0 24px 60px rgba(6, 14, 32, 0.32);
+  background: rgba(19, 27, 46, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 32px rgba(6, 14, 32, 0.3);
 }
 
 .surface-panel--high {
@@ -127,8 +132,8 @@ body {
 }
 
 .surface-panel--glass {
-  background: var(--qa-surface-bright);
-  backdrop-filter: blur(20px);
+  background: rgba(49, 57, 77, 0.45);
+  backdrop-filter: blur(28px);
 }
 
 .status-bar {
@@ -182,7 +187,8 @@ body {
 .muted-label {
   color: var(--qa-text-soft);
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.1em;
+  font-weight: 500;
   font-size: 0.72rem;
 }
 
@@ -381,8 +387,15 @@ body {
   color: var(--qa-text-soft);
   border: 1px solid transparent;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  font-weight: 500;
   font-size: 0.68rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.pill-button:hover:not(.pill-button--active) {
+  background: rgba(49, 57, 77, 0.95);
+  color: var(--qa-text);
 }
 
 .pill-button--active {
