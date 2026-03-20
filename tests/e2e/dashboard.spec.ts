@@ -13,13 +13,15 @@ test.describe('dashboard', () => {
 
     await expect(page.getByRole('banner').getByText('모의 데이터')).toBeVisible();
     await expect(page.getByText('표시 설정', { exact: true })).toBeVisible();
-    await expect(page.getByText(/오버레이 \d+개/)).toBeVisible();
-    await expect(page.getByText(/패널 \d+개/)).toBeVisible();
     await expect(page.getByRole('button', { name: '표시 설정 펼치기' })).toBeVisible();
+    await expect(page.locator('.signal-score-card').getByRole('button', { name: '펼치기', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'EMA 20 설명 열기' })).toHaveCount(0);
     await expect(page.getByText('분석 컨텍스트')).toBeVisible();
-    await expect.poll(() => page.locator('.summary-highlight').count()).toBeGreaterThan(0);
-    await expect(page.locator('.summary-highlight').first()).toContainText('가중치');
+    await expect.poll(() => page.locator('.signal-summary-card__chip').count()).toBeGreaterThan(0);
+    await expect.poll(() => page.locator('.signal-summary-card__bullet').count()).toBeGreaterThan(0);
+    await expect(page.locator('.signal-summary-card__bullet').first()).toContainText(/[A-Z가-힣0-9]/);
+    await expect(page.locator('.signal-score-card .score-chip')).toHaveCount(0);
+    await expect(page.locator('.signal-score-card .summary-category')).toHaveCount(0);
     await expect(page.getByRole('button', { name: '인트라데이' })).toBeVisible();
     await expect.poll(() => page.locator('.chart-panel canvas').count()).toBeGreaterThan(0);
   });
@@ -30,10 +32,13 @@ test.describe('dashboard', () => {
 
     await expect(page.locator('.control-cluster').getByText('모드')).toBeVisible();
     await expect(page.locator('.control-cluster').getByText('고급 설정')).toBeVisible();
-    await page.getByRole('button', { name: '펼치기', exact: true }).click();
+    await page.locator('.control-cluster').getByRole('button', { name: '펼치기', exact: true }).click();
     await expect(page.locator('.control-cluster').getByText('세션', { exact: true })).toBeVisible();
     await expect(page.locator('.control-cluster').getByText('앵커', { exact: true })).toBeVisible();
     await expect(page.getByText('시간대', { exact: true })).toBeVisible();
+
+    await page.locator('.signal-score-card').getByRole('button', { name: '펼치기', exact: true }).click();
+    await expect.poll(() => page.locator('.signal-score-card .summary-category').count()).toBeGreaterThan(0);
   });
 
   test('opens explanation popovers for signals and indicators', async ({ page }) => {
@@ -45,7 +50,7 @@ test.describe('dashboard', () => {
       page.getByText('모드는 어떤 분석 레짐을 기본으로 볼지 정합니다. intraday는 세션 구조와 참여도, swing은 큰 추세와 상대강도 해석에 맞춰집니다.')
     ).toBeVisible();
 
-    await page.getByRole('button', { name: '펼치기', exact: true }).click();
+    await page.locator('.control-cluster').getByRole('button', { name: '펼치기', exact: true }).click();
 
     await page.getByRole('button', { name: '시그널 요약 설명 열기' }).click();
     await expect(

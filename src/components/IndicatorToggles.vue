@@ -39,23 +39,6 @@ const lowerPaneItems = computed(() => [
 
 const items = computed(() => [...overlayItems.value, ...lowerPaneItems.value]);
 
-const layerSummary = computed(() =>
-  [
-    {
-      key: 'overlay',
-      label: t('indicator.summary.overlay', {
-        count: overlayItems.value.filter((item) => props.visibility[item.key]).length
-      })
-    },
-    {
-      key: 'lower',
-      label: t('indicator.summary.lower', {
-        count: lowerPaneItems.value.filter((item) => props.visibility[item.key]).length
-      })
-    }
-  ]
-);
-
 const indicatorExplanations = computed<Record<IndicatorToggleKey, ReturnType<typeof buildIndicatorExplanation>>>(() => ({
   ema20: buildIndicatorExplanation(props.response, 'ema20', t, dateLocale.value),
   ema50: buildIndicatorExplanation(props.response, 'ema50', t, dateLocale.value),
@@ -78,12 +61,7 @@ const indicatorExplanations = computed<Record<IndicatorToggleKey, ReturnType<typ
 <template>
   <v-card class="surface-panel pa-6" rounded="xl">
     <div class="indicator-layers-card__header">
-      <div class="indicator-layers-card__meta">
-        <div class="muted-label">{{ t('indicator.title') }}</div>
-        <div class="indicator-layers-card__summary">
-          <span v-for="item in layerSummary" :key="item.key" class="control-summary-chip">{{ item.label }}</span>
-        </div>
-      </div>
+      <div class="muted-label">{{ t('indicator.title') }}</div>
       <v-btn
         class="pill-button control-toggle-button"
         variant="text"
