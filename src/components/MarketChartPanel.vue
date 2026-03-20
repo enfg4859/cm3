@@ -76,14 +76,14 @@ const legendItems = computed(() => {
   if (props.visibility.vwap) {
     const point = lastPoint(props.response.indicators.vwap);
     if (point?.value !== null && point?.value !== undefined) {
-      items.push({ label: 'VWAP', value: point.value.toFixed(2), color: '#ffcb77' });
+      items.push({ label: t('chart.legend.vwap'), value: point.value.toFixed(2), color: '#ffcb77' });
     }
   }
 
   if (props.visibility.anchoredVwap) {
     const point = lastPoint(props.response.indicators.anchoredVwap);
     if (point?.value !== null && point?.value !== undefined) {
-      items.push({ label: 'AVWAP', value: point.value.toFixed(2), color: '#ff8c42' });
+      items.push({ label: t('chart.legend.avwap'), value: point.value.toFixed(2), color: '#ff8c42' });
     }
   }
 
@@ -118,24 +118,24 @@ const panelMeta = computed(() => ({
     description: t('chart.panel.info.atr')
   },
   adx: {
-    label: 'ADX / DMI',
+    label: t('chart.panel.adxDmi'),
     value: [...props.response.indicators.adxDmi14].reverse().find((entry) => entry.adx !== null)?.adx?.toFixed(2) ?? '--',
-    description: 'ADX와 +DI/-DI로 추세 강도와 방향 우위를 함께 봅니다.'
+    description: t('chart.panel.info.adxDmi')
   },
   rvol: {
     label:
       props.response.analysisContext.participationMode === 'rvol_tod'
-        ? 'RVOL-TOD'
+        ? t('chart.panel.rvolTod')
         : props.response.analysisContext.participationMode === 'rvol_classic'
-          ? 'RVOL'
-          : 'RVOL unavailable',
+          ? t('chart.panel.rvol')
+          : t('chart.panel.rvolUnavailable'),
     value: lastPoint(props.response.indicators.rvol20)?.value?.toFixed(2) ?? '--',
-    description: '현재 시점의 거래량 참여도가 평소보다 얼마나 이례적인지 보여줍니다.'
+    description: t('chart.panel.info.rvol')
   },
   relative: {
-    label: 'RS Line',
+    label: t('chart.panel.relativeStrength'),
     value: lastPoint(props.response.indicators.relativeStrength)?.value?.toFixed(4) ?? '--',
-    description: 'SPY/QQQ 대비 상대 강도를 추적합니다.'
+    description: t('chart.panel.info.relativeStrength')
   }
 }));
 

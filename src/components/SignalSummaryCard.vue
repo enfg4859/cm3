@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { SignalCategoryKey, SignalSummary } from '@shared/market';
-import { useI18n } from '@/utils/i18n';
+import { localizeSignalCategory, localizeSignalCategoryStatus, useI18n } from '@/utils/i18n';
 
 const props = defineProps<{
   summary: SignalSummary;
@@ -54,7 +54,7 @@ const orderedCategories = computed(() =>
         <v-icon :icon="icon" :color="tone" />
       </v-avatar>
       <div>
-        <div style="font-size: 1.1rem; font-weight: 800;">{{ summary.label }}</div>
+        <div style="font-size: 1.1rem; font-weight: 800;">{{ t(`summary.bias.${summary.bias}`) }}</div>
         <div class="text-medium-emphasis" style="font-size: 0.82rem;">
           {{ t('summary.confidence') }} {{ t(`summary.confidence.${summary.confidence}`) }}
         </div>
@@ -63,19 +63,19 @@ const orderedCategories = computed(() =>
 
     <div class="score-grid mb-4">
       <div class="score-chip">
-        <span class="muted-label">Bullish</span>
+        <span class="muted-label">{{ t('summary.score.bullish') }}</span>
         <strong>{{ summary.scores.bullish.toFixed(1) }}</strong>
       </div>
       <div class="score-chip">
-        <span class="muted-label">Bearish</span>
+        <span class="muted-label">{{ t('summary.score.bearish') }}</span>
         <strong>{{ summary.scores.bearish.toFixed(1) }}</strong>
       </div>
       <div class="score-chip">
-        <span class="muted-label">Neutral</span>
+        <span class="muted-label">{{ t('summary.score.neutral') }}</span>
         <strong>{{ summary.scores.neutral.toFixed(1) }}</strong>
       </div>
       <div class="score-chip">
-        <span class="muted-label">Coverage</span>
+        <span class="muted-label">{{ t('summary.score.coverage') }}</span>
         <strong>{{ (summary.coverageFactor * 100).toFixed(0) }}%</strong>
       </div>
     </div>
@@ -87,11 +87,11 @@ const orderedCategories = computed(() =>
         class="summary-category"
       >
         <div class="d-flex align-center justify-space-between ga-3">
-          <span style="font-weight: 700;">{{ category.headline }}</span>
+          <span style="font-weight: 700;">{{ localizeSignalCategory(key) }}</span>
           <span class="helper-chip" style="padding: 6px 10px;">{{ category.weight.toFixed(0) }}%</span>
         </div>
         <div class="text-medium-emphasis mt-2" style="font-size: 0.82rem;">
-          {{ category.status }}
+          {{ localizeSignalCategoryStatus(category.status) }}
         </div>
       </div>
     </div>

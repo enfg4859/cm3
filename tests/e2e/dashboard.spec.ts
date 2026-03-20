@@ -13,8 +13,8 @@ test.describe('dashboard', () => {
 
     await expect(page.getByRole('banner').getByText('모의 데이터')).toBeVisible();
     await expect(page.getByText('표시 레이어')).toBeVisible();
-    await expect(page.getByText('Analysis Context')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'intraday' })).toBeVisible();
+    await expect(page.getByText('분석 컨텍스트')).toBeVisible();
+    await expect(page.getByRole('button', { name: '인트라데이' })).toBeVisible();
     await expect.poll(() => page.locator('.chart-panel canvas').count()).toBeGreaterThan(0);
   });
 
@@ -22,10 +22,10 @@ test.describe('dashboard', () => {
     await page.goto('/');
     await waitForDashboard(page);
 
-    await expect(page.locator('.control-cluster').getByText('Mode')).toBeVisible();
-    await expect(page.locator('.control-cluster').getByText('Session', { exact: true })).toBeVisible();
-    await expect(page.locator('.control-cluster').getByText('Anchor')).toBeVisible();
-    await expect(page.getByText('Timezone', { exact: true })).toBeVisible();
+    await expect(page.locator('.control-cluster').getByText('모드')).toBeVisible();
+    await expect(page.locator('.control-cluster').getByText('세션', { exact: true })).toBeVisible();
+    await expect(page.locator('.control-cluster').getByText('앵커')).toBeVisible();
+    await expect(page.getByText('시간대', { exact: true })).toBeVisible();
   });
 
   test('switches between Korean and English', async ({ page }) => {

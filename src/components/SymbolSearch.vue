@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { SearchResult } from '@shared/market';
-import { useI18n } from '@/utils/i18n';
+import { translateErrorMessage, useI18n } from '@/utils/i18n';
 
 const props = defineProps<{
   modelValue: string;
@@ -21,6 +21,18 @@ const { t } = useI18n();
 const showPopover = computed(
   () => props.modelValue.trim().length > 0 && (props.loading || props.results.length > 0 || Boolean(props.error))
 );
+const localizedError = computed(() => {
+  if (!props.error) {
+    return '';
+  }
+
+  if (props.error === 'No matching symbols.') {
+    return t('search.noResults');
+  }
+
+  const translated = translateErrorMessage(props.error);
+  return translated === props.error ? t('search.genericError') : translated;
+});
 </script>
 
 <template>
@@ -72,7 +84,7 @@ const showPopover = computed(
             style="font-size: 0.82rem;"
           >
             <v-icon icon="mdi-alert-circle-outline" color="error" size="18" />
-            <span>{{ error === 'No matching symbols.' ? t('search.noResults') : error }}</span>
+            <span>{{ localizedError }}</span>
           </div>
         </div>
       </v-card>

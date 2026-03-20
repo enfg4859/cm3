@@ -14,28 +14,28 @@ const emit = defineEmits<{
 
 const groups = computed(() => [
   {
-    title: 'Price Overlay',
+    title: t('indicator.group.overlay'),
     items: [
       { key: 'ema20', label: t('indicator.ema20'), color: '#c0c1ff' },
       { key: 'ema50', label: t('indicator.ema50'), color: '#4edea3' },
       { key: 'ema200', label: t('indicator.ema200'), color: '#8083ff' },
       { key: 'bollinger', label: t('indicator.bollinger'), color: '#908fa0' },
-      { key: 'vwap', label: 'VWAP', color: '#ffcb77' },
-      { key: 'anchoredVwap', label: 'Anchored VWAP', color: '#ff8c42' },
-      { key: 'pdhPdl', label: 'PDH / PDL', color: '#6ae1ff' },
-      { key: 'openingRange', label: 'Opening Range', color: '#ffd166' }
+      { key: 'vwap', label: t('indicator.vwap'), color: '#ffcb77' },
+      { key: 'anchoredVwap', label: t('indicator.anchoredVwap'), color: '#ff8c42' },
+      { key: 'pdhPdl', label: t('indicator.pdhPdl'), color: '#6ae1ff' },
+      { key: 'openingRange', label: t('indicator.openingRange'), color: '#ffd166' }
     ]
   },
   {
-    title: 'Lower Panes',
+    title: t('indicator.group.lower'),
     items: [
       { key: 'volume', label: t('indicator.volume'), color: '#4edea3' },
-      { key: 'rvol', label: 'RVOL', color: '#9bff8a' },
+      { key: 'rvol', label: t('indicator.rvol'), color: '#9bff8a' },
       { key: 'rsi', label: t('indicator.rsi'), color: '#c0c1ff' },
       { key: 'macd', label: t('indicator.macd'), color: '#ff516a' },
-      { key: 'adxDmi', label: 'ADX / DMI', color: '#ff9f6e' },
+      { key: 'adxDmi', label: t('indicator.adxDmi'), color: '#ff9f6e' },
       { key: 'atr', label: t('indicator.atr'), color: '#ffb2b7' },
-      { key: 'relativeStrength', label: 'RS Line', color: '#79a8ff' }
+      { key: 'relativeStrength', label: t('indicator.relativeStrength'), color: '#79a8ff' }
     ]
   }
 ]);

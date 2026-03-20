@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import type { SignalSummary } from '@shared/market';
+import type { AnchorContext, SignalSummary } from '@shared/market';
 
 export type AppLocale = 'ko' | 'en';
 
@@ -33,6 +33,23 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'quote.versusPreviousClose': '전일 종가 대비',
     'controls.range': '기간',
     'controls.interval': '인터벌',
+    'controls.mode': '모드',
+    'controls.session': '세션',
+    'controls.benchmark': '벤치마크',
+    'controls.openingRange': '오프닝 레인지',
+    'controls.anchor': '앵커',
+    'controls.off': '끔',
+    'controls.modeValue.intraday': '인트라데이',
+    'controls.modeValue.swing': '스윙',
+    'controls.sessionValue.regular': '정규장',
+    'controls.sessionValue.extended': '시간외 포함',
+    'controls.anchorType.manual': '수동',
+    'controls.anchorType.gap': '갭',
+    'controls.anchorType.breakout': '돌파',
+    'controls.anchorType.swing_high': '스윙 고점',
+    'controls.anchorType.swing_low': '스윙 저점',
+    'controls.anchorHint.pick': '차트에서 앵커 시점을 선택하세요.',
+    'controls.anchorHint.repick': '수동 앵커를 다시 찍으려면 차트를 클릭하세요.',
     'execution.title': '실행 레이어',
     'execution.provider': '공급자',
     'execution.cache': '캐시',
@@ -51,6 +68,23 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'summary.confidence.low': '낮음',
     'summary.confidence.medium': '보통',
     'summary.confidence.high': '높음',
+    'summary.score.bullish': '상승 점수',
+    'summary.score.bearish': '하락 점수',
+    'summary.score.neutral': '중립 점수',
+    'summary.score.coverage': '커버리지',
+    'summary.category.trend': '추세',
+    'summary.category.trendStrength': '추세 강도',
+    'summary.category.momentum': '모멘텀',
+    'summary.category.volatility': '변동성',
+    'summary.category.participation': '참여도',
+    'summary.category.relative': '상대강도',
+    'summary.category.structure': '구조',
+    'summary.category.session': '세션',
+    'summary.categoryStatus.bullish': '상승',
+    'summary.categoryStatus.bearish': '하락',
+    'summary.categoryStatus.neutral': '중립',
+    'summary.categoryStatus.not_applicable': '해당 없음',
+    'summary.categoryStatus.unavailable': '계산 불가',
     'summary.metric.emaTrend.bullish': '상승 추세',
     'summary.metric.emaTrend.bearish': '하락 추세',
     'summary.metric.emaTrend.mixed': '혼합 추세',
@@ -78,6 +112,8 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'summary.bullet.volatilityState.normal': '변동성은 정상 범위입니다.',
     'summary.bullet.volatilityState.elevated': '변동성이 높아진 상태입니다.',
     'indicator.title': '표시 레이어',
+    'indicator.group.overlay': '가격 오버레이',
+    'indicator.group.lower': '하단 패널',
     'indicator.overlayControl': '오버레이 표시',
     'indicator.ema20': 'EMA 20',
     'indicator.ema50': 'EMA 50',
@@ -87,17 +123,34 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'indicator.rsi': 'RSI 14',
     'indicator.macd': 'MACD',
     'indicator.atr': 'ATR 14',
+    'indicator.vwap': 'VWAP',
+    'indicator.anchoredVwap': '앵커 VWAP',
+    'indicator.pdhPdl': '전일 고가 / 저가',
+    'indicator.openingRange': '오프닝 레인지',
+    'indicator.rvol': 'RVOL',
+    'indicator.adxDmi': 'ADX / DMI',
+    'indicator.relativeStrength': '상대강도 라인',
     'chart.legend.close': '종가',
     'chart.legend.bbMid': 'BB 중심',
+    'chart.legend.vwap': 'VWAP',
+    'chart.legend.avwap': 'AVWAP',
     'chart.panel.volume': '거래량',
     'chart.panel.rsi': 'RSI 14',
     'chart.panel.macd': 'MACD',
     'chart.panel.atr': 'ATR 14',
+    'chart.panel.adxDmi': 'ADX / DMI',
+    'chart.panel.rvol': 'RVOL',
+    'chart.panel.rvolTod': 'RVOL-TOD',
+    'chart.panel.rvolUnavailable': 'RVOL 사용 불가',
+    'chart.panel.relativeStrength': '상대강도 라인',
     'chart.panel.infoLabel': '{label} 설명',
     'chart.panel.info.volume': '거래량은 각 캔들에서 체결된 수량을 보여주며, 현재 가격 움직임에 얼마나 많은 참여가 붙었는지 확인할 때 봅니다.',
     'chart.panel.info.rsi': 'RSI는 최근 14개 캔들의 상승 강도와 하락 강도를 0에서 100 사이로 압축한 모멘텀 지표입니다. 보통 70 이상은 과매수, 30 이하는 과매도로 해석합니다.',
     'chart.panel.info.macd': 'MACD는 단기와 장기 EMA의 차이로 추세 변화와 모멘텀을 봅니다. 히스토그램은 MACD와 시그널 라인의 간격을 보여줍니다.',
     'chart.panel.info.atr': 'ATR은 최근 14개 구간의 평균 실제 변동폭입니다. 방향보다는 현재 변동성의 크기를 읽는 데 사용합니다.',
+    'chart.panel.info.adxDmi': 'ADX와 +DI/-DI로 추세의 강도와 방향 우위를 함께 읽습니다.',
+    'chart.panel.info.rvol': '현재 거래량이 평소 대비 얼마나 강한지 보여줍니다.',
+    'chart.panel.info.relativeStrength': '벤치마크 대비 종목의 상대 강도를 추적합니다.',
     'quote.card.volume': '거래량',
     'quote.card.updated': '업데이트',
     'quote.card.dayHigh': '당일 고가',
@@ -110,6 +163,25 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'dashboard.error.title': '심볼을 찾을 수 없습니다.',
     'dashboard.empty.title': '분석을 시작할 준비가 되었습니다.',
     'dashboard.empty.description': '심볼을 검색하면 정규화된 시세, 기술 지표, 동기화된 멀티 패널 차트를 불러옵니다.',
+    'context.title': '분석 컨텍스트',
+    'context.session': '세션',
+    'context.timezone': '시간대',
+    'context.earlyClose': '조기 종료',
+    'context.anchor': '앵커',
+    'context.relative': '상대강도',
+    'context.openingRange': '오프닝 레인지',
+    'context.relative.notApplicable': '해당 없음',
+    'context.relative.benchmarkUnavailable': '벤치마크 불가',
+    'context.status.ready': '준비됨',
+    'context.status.unavailable': '사용 불가',
+    'context.status.not_applicable': '해당 없음',
+    'context.status.restricted': '제한됨',
+    'context.anchorPending': '선택 대기',
+    'context.anchorWithTime': '{type} · {time}',
+    'common.yes': '예',
+    'common.no': '아니오',
+    'common.apiStatus.ok': '정상',
+    'common.apiStatus.degraded': '저하',
     'error.symbolNotFound': '요청한 심볼을 찾을 수 없습니다.',
     'error.network': '서버에 연결하지 못했습니다.',
     'error.unknown': '알 수 없는 오류가 발생했습니다.'
@@ -141,6 +213,23 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'quote.versusPreviousClose': 'versus previous close',
     'controls.range': 'Range',
     'controls.interval': 'Interval',
+    'controls.mode': 'Mode',
+    'controls.session': 'Session',
+    'controls.benchmark': 'Benchmark',
+    'controls.openingRange': 'Opening Range',
+    'controls.anchor': 'Anchor',
+    'controls.off': 'Off',
+    'controls.modeValue.intraday': 'Intraday',
+    'controls.modeValue.swing': 'Swing',
+    'controls.sessionValue.regular': 'Regular',
+    'controls.sessionValue.extended': 'Extended',
+    'controls.anchorType.manual': 'Manual',
+    'controls.anchorType.gap': 'Gap',
+    'controls.anchorType.breakout': 'Breakout',
+    'controls.anchorType.swing_high': 'Swing High',
+    'controls.anchorType.swing_low': 'Swing Low',
+    'controls.anchorHint.pick': 'Pick an anchor point on the chart.',
+    'controls.anchorHint.repick': 'Click the chart to place a new manual anchor.',
     'execution.title': 'Execution Layer',
     'execution.provider': 'Provider',
     'execution.cache': 'Cache',
@@ -159,6 +248,23 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'summary.confidence.low': 'Low',
     'summary.confidence.medium': 'Medium',
     'summary.confidence.high': 'High',
+    'summary.score.bullish': 'Bullish',
+    'summary.score.bearish': 'Bearish',
+    'summary.score.neutral': 'Neutral',
+    'summary.score.coverage': 'Coverage',
+    'summary.category.trend': 'Trend',
+    'summary.category.trendStrength': 'Trend Strength',
+    'summary.category.momentum': 'Momentum',
+    'summary.category.volatility': 'Volatility',
+    'summary.category.participation': 'Participation',
+    'summary.category.relative': 'Relative',
+    'summary.category.structure': 'Structure',
+    'summary.category.session': 'Session',
+    'summary.categoryStatus.bullish': 'Bullish',
+    'summary.categoryStatus.bearish': 'Bearish',
+    'summary.categoryStatus.neutral': 'Neutral',
+    'summary.categoryStatus.not_applicable': 'Not applicable',
+    'summary.categoryStatus.unavailable': 'Unavailable',
     'summary.metric.emaTrend.bullish': 'bullish trend',
     'summary.metric.emaTrend.bearish': 'bearish trend',
     'summary.metric.emaTrend.mixed': 'mixed trend',
@@ -186,6 +292,8 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'summary.bullet.volatilityState.normal': 'Volatility is in a normal range.',
     'summary.bullet.volatilityState.elevated': 'Volatility is elevated.',
     'indicator.title': 'Visible Layers',
+    'indicator.group.overlay': 'Price Overlay',
+    'indicator.group.lower': 'Lower Panes',
     'indicator.overlayControl': 'Overlay control',
     'indicator.ema20': 'EMA 20',
     'indicator.ema50': 'EMA 50',
@@ -195,17 +303,34 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'indicator.rsi': 'RSI 14',
     'indicator.macd': 'MACD',
     'indicator.atr': 'ATR 14',
+    'indicator.vwap': 'VWAP',
+    'indicator.anchoredVwap': 'Anchored VWAP',
+    'indicator.pdhPdl': 'PDH / PDL',
+    'indicator.openingRange': 'Opening Range',
+    'indicator.rvol': 'RVOL',
+    'indicator.adxDmi': 'ADX / DMI',
+    'indicator.relativeStrength': 'RS Line',
     'chart.legend.close': 'Close',
     'chart.legend.bbMid': 'BB Mid',
+    'chart.legend.vwap': 'VWAP',
+    'chart.legend.avwap': 'AVWAP',
     'chart.panel.volume': 'Volume',
     'chart.panel.rsi': 'RSI 14',
     'chart.panel.macd': 'MACD',
     'chart.panel.atr': 'ATR 14',
+    'chart.panel.adxDmi': 'ADX / DMI',
+    'chart.panel.rvol': 'RVOL',
+    'chart.panel.rvolTod': 'RVOL-TOD',
+    'chart.panel.rvolUnavailable': 'RVOL unavailable',
+    'chart.panel.relativeStrength': 'RS Line',
     'chart.panel.infoLabel': 'About {label}',
     'chart.panel.info.volume': 'Volume shows how much traded during each candle and helps judge how much participation is behind the current price move.',
     'chart.panel.info.rsi': 'RSI compresses the last 14 candles of buying and selling strength into a 0 to 100 momentum oscillator. Readings above 70 are commonly treated as overbought and below 30 as oversold.',
     'chart.panel.info.macd': 'MACD compares short and long EMAs to track momentum and trend shifts. The histogram shows the gap between the MACD line and the signal line.',
     'chart.panel.info.atr': 'ATR measures the average true range over the last 14 periods. It is used to read volatility size rather than direction.',
+    'chart.panel.info.adxDmi': 'ADX with +DI/-DI shows trend strength and directional dominance together.',
+    'chart.panel.info.rvol': 'Shows how unusual current participation is relative to normal volume.',
+    'chart.panel.info.relativeStrength': 'Tracks symbol strength versus the selected benchmark.',
     'quote.card.volume': 'Volume',
     'quote.card.updated': 'Updated',
     'quote.card.dayHigh': 'Day High',
@@ -218,6 +343,25 @@ const messages: Record<AppLocale, Record<string, string>> = {
     'dashboard.error.title': 'Symbol could not be resolved.',
     'dashboard.empty.title': 'Ready for deep analysis.',
     'dashboard.empty.description': 'Search a symbol to load normalized quote data, technical overlays, and a synchronized multi-panel chart workspace.',
+    'context.title': 'Analysis Context',
+    'context.session': 'Session',
+    'context.timezone': 'Timezone',
+    'context.earlyClose': 'Early Close',
+    'context.anchor': 'Anchor',
+    'context.relative': 'Relative',
+    'context.openingRange': 'Opening Range',
+    'context.relative.notApplicable': 'Not applicable',
+    'context.relative.benchmarkUnavailable': 'Benchmark unavailable',
+    'context.status.ready': 'Ready',
+    'context.status.unavailable': 'Unavailable',
+    'context.status.not_applicable': 'Not applicable',
+    'context.status.restricted': 'Restricted',
+    'context.anchorPending': 'Pending',
+    'context.anchorWithTime': '{type} · {time}',
+    'common.yes': 'Yes',
+    'common.no': 'No',
+    'common.apiStatus.ok': 'OK',
+    'common.apiStatus.degraded': 'Degraded',
     'error.symbolNotFound': 'The requested symbol could not be found.',
     'error.network': 'Unable to reach the server.',
     'error.unknown': 'An unknown error occurred.'
@@ -284,9 +428,45 @@ export function translateErrorMessage(message: string | null) {
 
 export function localizeSignalSummary(summary: SignalSummary) {
   return {
-    label: summary.label,
+    label: t(`summary.bias.${summary.bias}`),
     confidence: t(`summary.confidence.${summary.confidence}`),
     metricChips: [],
     bullets: summary.bullets
   };
+}
+
+export function localizeSignalCategory(key: string) {
+  return t(`summary.category.${key}`);
+}
+
+export function localizeSignalCategoryStatus(status: string) {
+  return t(`summary.categoryStatus.${status}`);
+}
+
+export function localizeAnalysisStatus(status: string) {
+  return t(`context.status.${status}`);
+}
+
+export function localizeSessionType(sessionType: string) {
+  return t(`controls.sessionValue.${sessionType}`);
+}
+
+export function localizeAnchorType(anchorType: string) {
+  return t(`controls.anchorType.${anchorType}`);
+}
+
+export function localizeAnchorContext(anchor: AnchorContext, formatTime: (time: number) => string) {
+  const typeLabel = localizeAnchorType(anchor.anchorType);
+
+  if (anchor.anchorTime === null) {
+    return anchor.anchorType === 'manual'
+      ? `${typeLabel} (${t('context.anchorPending')})`
+      : `${typeLabel} (${t('context.status.unavailable')})`;
+  }
+
+  return t('context.anchorWithTime', { type: typeLabel, time: formatTime(anchor.anchorTime) });
+}
+
+export function localizeApiStatus(status: string) {
+  return t(`common.apiStatus.${status}`);
 }

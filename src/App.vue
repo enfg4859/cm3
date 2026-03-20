@@ -11,7 +11,14 @@ import {
   type SearchResult
 } from '@shared/market';
 import { formatCurrency, formatPercent, formatSignedCurrency, formatTimestamp } from '@/utils/format';
-import { translateErrorMessage, useI18n } from '@/utils/i18n';
+import {
+  localizeAnalysisStatus,
+  localizeAnchorContext,
+  localizeApiStatus,
+  localizeSessionType,
+  translateErrorMessage,
+  useI18n
+} from '@/utils/i18n';
 import { useMarketStore } from '@/stores/market';
 import DashboardState from '@/components/DashboardState.vue';
 import IndicatorToggles from '@/components/IndicatorToggles.vue';
@@ -55,6 +62,33 @@ const marketStatus = computed(() => {
   }
 });
 const localizedError = computed(() => translateErrorMessage(store.error));
+const localizedContextSession = computed(() =>
+  analysisContext.value ? localizeSessionType(analysisContext.value.sessionDefinition.sessionType) : '--'
+);
+const localizedAnchorLabel = computed(() =>
+  analysisContext.value
+    ? localizeAnchorContext(analysisContext.value.anchor, (time) => formatTimestamp(time, dateLocale.value))
+    : '--'
+);
+const localizedRelativeLabel = computed(() => {
+  if (!analysisContext.value) {
+    return '--';
+  }
+
+  if (analysisContext.value.relative.relativeNotApplicable) {
+    return t('context.relative.notApplicable');
+  }
+
+  if (analysisContext.value.relative.benchmarkUnavailable) {
+    return t('context.relative.benchmarkUnavailable');
+  }
+
+  return analysisContext.value.relative.benchmark ?? '--';
+});
+const localizedOpeningRangeStatus = computed(() =>
+  analysisContext.value ? localizeAnalysisStatus(analysisContext.value.openingRange.status) : '--'
+);
+const localizedApiStatus = computed(() => localizeApiStatus(store.health?.status ?? 'ok'));
 
 function runSearch(symbol: string) {
   void store.loadDashboard(symbol);
@@ -266,7 +300,7 @@ onBeforeUnmount(() => {
               </div>
 
               <div>
-                <div class="muted-label mb-3">Mode</div>
+                <div class="muted-label mb-3">{{ t('controls.mode') }}</div>
                 <div class="pill-row">
                   <v-btn
                     v-for="mode in ANALYSIS_MODE_OPTIONS"
@@ -275,14 +309,14 @@ onBeforeUnmount(() => {
                     :class="{ 'pill-button--active': store.mode === mode }"
                     @click="store.setMode(mode)"
                   >
-                    {{ mode }}
+                    {{ t(`controls.modeValue.${mode}`) }}
                   </v-btn>
                 </div>
               </div>
 
               <div class="indicator-grid">
                 <div>
-                  <div class="muted-label mb-3">Session</div>
+                  <div class="muted-label mb-3">{{ t('controls.session') }}</div>
                   <div class="pill-row">
                     <v-btn
                       v-for="session in SESSION_OPTIONS"
@@ -291,13 +325,13 @@ onBeforeUnmount(() => {
                       :class="{ 'pill-button--active': store.session === session }"
                       @click="store.setSession(session)"
                     >
-                      {{ session }}
+                      {{ t(`controls.sessionValue.${session}`) }}
                     </v-btn>
                   </div>
                 </div>
 
                 <div>
-                  <div class="muted-label mb-3">Benchmark</div>
+                  <div class="muted-label mb-3">{{ t('controls.benchmark') }}</div>
                   <div class="pill-row">
                     <v-btn
                       v-for="benchmark in BENCHMARK_OPTIONS"
@@ -314,14 +348,14 @@ onBeforeUnmount(() => {
 
               <div class="indicator-grid">
                 <div>
-                  <div class="muted-label mb-3">Opening Range</div>
+                  <div class="muted-label mb-3">{{ t('controls.openingRange') }}</div>
                   <div class="pill-row">
                     <v-btn
                       class="pill-button"
                       :class="{ 'pill-button--active': store.orMinutes === null }"
                       @click="store.setOpeningRange(null)"
                     >
-                      off
+                      {{ t('controls.off') }}
                     </v-btn>
                     <v-btn
                       v-for="minutes in OPENING_RANGE_OPTIONS"
@@ -337,7 +371,7 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div>
-                  <div class="muted-label mb-3">Anchor</div>
+                  <div class="muted-label mb-3">{{ t('controls.anchor') }}</div>
                   <div class="pill-row">
                     <v-btn
                       v-for="anchorType in ANCHOR_TYPE_OPTIONS"
@@ -346,11 +380,11 @@ onBeforeUnmount(() => {
                       :class="{ 'pill-button--active': store.anchorType === anchorType }"
                       @click="store.setAnchorType(anchorType)"
                     >
-                      {{ anchorType }}
+                      {{ t(`controls.anchorType.${anchorType}`) }}
                     </v-btn>
                   </div>
                   <div v-if="store.anchorType === 'manual'" class="text-medium-emphasis mt-2" style="font-size: 0.8rem;">
-                    {{ store.manualAnchorArmed ? '차트에서 anchor를 선택하세요.' : '수동 anchor를 다시 찍으려면 차트를 클릭하세요.' }}
+                    {{ store.manualAnchorArmed ? t('controls.anchorHint.pick') : t('controls.anchorHint.repick') }}
                   </div>
                 </div>
               </div>
@@ -373,39 +407,31 @@ onBeforeUnmount(() => {
               <IndicatorToggles :visibility="store.visibility" @toggle="store.toggleIndicator" />
 
               <v-card class="surface-panel pa-6" rounded="xl">
-                <div class="muted-label mb-4">Analysis Context</div>
+                <div class="muted-label mb-4">{{ t('context.title') }}</div>
                 <div class="d-flex flex-column ga-4">
                   <div class="metric-row">
-                    <span class="text-medium-emphasis">Session</span>
-                    <span>{{ analysisContext.sessionDefinition.sessionType }}</span>
+                    <span class="text-medium-emphasis">{{ t('context.session') }}</span>
+                    <span>{{ localizedContextSession }}</span>
                   </div>
                   <div class="metric-row">
-                    <span class="text-medium-emphasis">Timezone</span>
+                    <span class="text-medium-emphasis">{{ t('context.timezone') }}</span>
                     <span>{{ analysisContext.sessionDefinition.exchangeTimezone }}</span>
                   </div>
                   <div class="metric-row">
-                    <span class="text-medium-emphasis">Early Close</span>
-                    <span>{{ analysisContext.sessionDefinition.isEarlyClose ? 'yes' : 'no' }}</span>
+                    <span class="text-medium-emphasis">{{ t('context.earlyClose') }}</span>
+                    <span>{{ analysisContext.sessionDefinition.isEarlyClose ? t('common.yes') : t('common.no') }}</span>
                   </div>
                   <div class="metric-row">
-                    <span class="text-medium-emphasis">Anchor</span>
-                    <span>{{ analysisContext.anchor.label }}</span>
+                    <span class="text-medium-emphasis">{{ t('context.anchor') }}</span>
+                    <span>{{ localizedAnchorLabel }}</span>
                   </div>
                   <div class="metric-row">
-                    <span class="text-medium-emphasis">Relative</span>
-                    <span>
-                      {{
-                        analysisContext.relative.relativeNotApplicable
-                          ? 'not applicable'
-                          : analysisContext.relative.benchmarkUnavailable
-                            ? 'benchmark unavailable'
-                            : analysisContext.relative.benchmark ?? '--'
-                      }}
-                    </span>
+                    <span class="text-medium-emphasis">{{ t('context.relative') }}</span>
+                    <span>{{ localizedRelativeLabel }}</span>
                   </div>
                   <div class="metric-row">
-                    <span class="text-medium-emphasis">Opening Range</span>
-                    <span>{{ analysisContext.openingRange.status }}</span>
+                    <span class="text-medium-emphasis">{{ t('context.openingRange') }}</span>
+                    <span>{{ localizedOpeningRangeStatus }}</span>
                   </div>
                 </div>
               </v-card>
@@ -423,7 +449,7 @@ onBeforeUnmount(() => {
                   </div>
                   <div class="metric-row">
                     <span class="text-medium-emphasis">{{ t('execution.apiStatus') }}</span>
-                    <span>{{ store.health?.status ?? 'ok' }}</span>
+                    <span>{{ localizedApiStatus }}</span>
                   </div>
                   <div class="metric-row">
                     <span class="text-medium-emphasis">{{ t('execution.lastSync') }}</span>
@@ -432,8 +458,8 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div class="d-flex flex-wrap ga-2 mt-5">
-                  <span class="helper-chip">{{ store.candlesResponse.provider }}</span>
-                  <span class="helper-chip">{{ store.range }} / {{ store.interval }} / {{ store.mode }}</span>
+                  <span class="helper-chip">{{ providerMode }}</span>
+                  <span class="helper-chip">{{ store.range }} / {{ store.interval }} / {{ t(`controls.modeValue.${store.mode}`) }}</span>
                   <span class="helper-chip">{{ t('execution.validated') }}</span>
                   <span class="helper-chip">technicalindicators</span>
                 </div>
