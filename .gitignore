@@ -9,8 +9,8 @@ playwright-report
 test-results
 
 # 개인 설정
-_lee
-docs
-agents.md
-prompts
-.logs
+# _lee
+# docs
+# agents.md
+# prompts
+# .logs
