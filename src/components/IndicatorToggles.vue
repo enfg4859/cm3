@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { IndicatorToggleKey, IndicatorVisibility } from '@shared/market';
+import type { CandlesResponse, IndicatorToggleKey, IndicatorVisibility } from '@shared/market';
+import InfoPopoverButton from '@/components/InfoPopoverButton.vue';
+import { buildIndicatorExplanation } from '@/utils/explanations';
 import { useI18n } from '@/utils/i18n';
 
-defineProps<{
+const props = defineProps<{
   visibility: IndicatorVisibility;
+  response?: CandlesResponse | null;
 }>();
 
-const { t } = useI18n();
+const { dateLocale, t } = useI18n();
 const emit = defineEmits<{
   toggle: [key: IndicatorToggleKey];
 }>();
@@ -39,6 +42,24 @@ const groups = computed(() => [
     ]
   }
 ]);
+
+const indicatorExplanations = computed<Record<IndicatorToggleKey, ReturnType<typeof buildIndicatorExplanation>>>(() => ({
+  ema20: buildIndicatorExplanation(props.response, 'ema20', t, dateLocale.value),
+  ema50: buildIndicatorExplanation(props.response, 'ema50', t, dateLocale.value),
+  ema200: buildIndicatorExplanation(props.response, 'ema200', t, dateLocale.value),
+  bollinger: buildIndicatorExplanation(props.response, 'bollinger', t, dateLocale.value),
+  volume: buildIndicatorExplanation(props.response, 'volume', t, dateLocale.value),
+  rsi: buildIndicatorExplanation(props.response, 'rsi', t, dateLocale.value),
+  macd: buildIndicatorExplanation(props.response, 'macd', t, dateLocale.value),
+  atr: buildIndicatorExplanation(props.response, 'atr', t, dateLocale.value),
+  vwap: buildIndicatorExplanation(props.response, 'vwap', t, dateLocale.value),
+  anchoredVwap: buildIndicatorExplanation(props.response, 'anchoredVwap', t, dateLocale.value),
+  adxDmi: buildIndicatorExplanation(props.response, 'adxDmi', t, dateLocale.value),
+  rvol: buildIndicatorExplanation(props.response, 'rvol', t, dateLocale.value),
+  relativeStrength: buildIndicatorExplanation(props.response, 'relativeStrength', t, dateLocale.value),
+  pdhPdl: buildIndicatorExplanation(props.response, 'pdhPdl', t, dateLocale.value),
+  openingRange: buildIndicatorExplanation(props.response, 'openingRange', t, dateLocale.value)
+}));
 </script>
 
 <template>
@@ -55,7 +76,15 @@ const groups = computed(() => [
                 :style="{ backgroundColor: item.color, boxShadow: `0 0 12px ${item.color}55` }"
               />
               <div>
-                <div style="font-weight: 700;">{{ item.label }}</div>
+                <div class="indicator-label-row">
+                  <span style="font-weight: 700;">{{ item.label }}</span>
+                  <InfoPopoverButton
+                    :title="item.label"
+                    :description="indicatorExplanations[item.key].description"
+                    :details="indicatorExplanations[item.key].details"
+                    :button-label="t('common.openInfoFor', { label: item.label })"
+                  />
+                </div>
                 <div class="text-medium-emphasis" style="font-size: 0.76rem;">{{ t('indicator.overlayControl') }}</div>
               </div>
             </div>

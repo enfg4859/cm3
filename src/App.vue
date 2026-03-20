@@ -404,7 +404,11 @@ onBeforeUnmount(() => {
 
             <aside class="signal-column">
               <SignalSummaryCard :summary="signalSummary" />
-              <IndicatorToggles :visibility="store.visibility" @toggle="store.toggleIndicator" />
+              <IndicatorToggles
+                :visibility="store.visibility"
+                :response="store.candlesResponse"
+                @toggle="store.toggleIndicator"
+              />
 
               <v-card class="surface-panel pa-6" rounded="xl">
                 <div class="muted-label mb-4">{{ t('context.title') }}</div>

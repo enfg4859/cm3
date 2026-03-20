@@ -28,6 +28,21 @@ test.describe('dashboard', () => {
     await expect(page.getByText('시간대', { exact: true })).toBeVisible();
   });
 
+  test('opens explanation popovers for signals and indicators', async ({ page }) => {
+    await page.goto('/');
+    await waitForDashboard(page);
+
+    await page.getByRole('button', { name: '시그널 요약 설명 열기' }).click();
+    await expect(
+      page.getByText('시그널 요약은 각 카테고리의 상승, 하락, 중립 기여도를 가중치에 맞게 합산해 계산합니다.')
+    ).toBeVisible();
+
+    await page.getByRole('button', { name: 'RSI 14 설명 열기' }).first().click();
+    await expect(
+      page.getByText('RSI는 최근 상승과 하락 강도를 0에서 100 사이로 압축한 모멘텀 지표입니다.')
+    ).toBeVisible();
+  });
+
   test('switches between Korean and English', async ({ page }) => {
     await page.goto('/');
     await waitForDashboard(page);

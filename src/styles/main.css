@@ -339,6 +339,12 @@ body {
   gap: 6px;
 }
 
+.indicator-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .indicator-panel__info {
   width: 24px;
   height: 24px;
@@ -363,6 +369,29 @@ body {
   font-size: 0.78rem;
   line-height: 1.55;
   backdrop-filter: blur(18px);
+}
+
+.indicator-tooltip__title {
+  font-size: 0.86rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.indicator-tooltip__description {
+  color: var(--qa-text);
+}
+
+.indicator-tooltip__details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.indicator-tooltip__detail {
+  color: var(--qa-text-soft);
 }
 
 .indicator-toggle {

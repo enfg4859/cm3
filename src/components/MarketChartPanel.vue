@@ -11,6 +11,8 @@ import {
 } from 'lightweight-charts';
 import type { IChartApi, UTCTimestamp } from 'lightweight-charts';
 import type { CandlesResponse, IndicatorVisibility } from '@shared/market';
+import InfoPopoverButton from '@/components/InfoPopoverButton.vue';
+import { buildIndicatorExplanation } from '@/utils/explanations';
 import { formatCompactNumber } from '@/utils/format';
 import { useI18n } from '@/utils/i18n';
 
@@ -98,31 +100,37 @@ const legendItems = computed(() => {
 
 const panelMeta = computed(() => ({
   volume: {
+    key: 'volume' as const,
     label: t('chart.panel.volume'),
     value: latestCandle.value ? formatCompactNumber(latestCandle.value.volume, dateLocale.value) : '--',
     description: t('chart.panel.info.volume')
   },
   rsi: {
+    key: 'rsi' as const,
     label: t('chart.panel.rsi'),
     value: lastPoint(props.response.indicators.rsi14)?.value?.toFixed(2) ?? '--',
     description: t('chart.panel.info.rsi')
   },
   macd: {
+    key: 'macd' as const,
     label: t('chart.panel.macd'),
     value: [...props.response.indicators.macd].reverse().find((entry) => entry.histogram !== null)?.histogram?.toFixed(2) ?? '--',
     description: t('chart.panel.info.macd')
   },
   atr: {
+    key: 'atr' as const,
     label: t('chart.panel.atr'),
     value: lastPoint(props.response.indicators.atr14)?.value?.toFixed(2) ?? '--',
     description: t('chart.panel.info.atr')
   },
   adx: {
+    key: 'adxDmi' as const,
     label: t('chart.panel.adxDmi'),
     value: [...props.response.indicators.adxDmi14].reverse().find((entry) => entry.adx !== null)?.adx?.toFixed(2) ?? '--',
     description: t('chart.panel.info.adxDmi')
   },
   rvol: {
+    key: 'rvol' as const,
     label:
       props.response.analysisContext.participationMode === 'rvol_tod'
         ? t('chart.panel.rvolTod')
@@ -133,10 +141,21 @@ const panelMeta = computed(() => ({
     description: t('chart.panel.info.rvol')
   },
   relative: {
+    key: 'relativeStrength' as const,
     label: t('chart.panel.relativeStrength'),
     value: lastPoint(props.response.indicators.relativeStrength)?.value?.toFixed(4) ?? '--',
     description: t('chart.panel.info.relativeStrength')
   }
+}));
+
+const panelExplanations = computed(() => ({
+  volume: buildIndicatorExplanation(props.response, 'volume', t, dateLocale.value),
+  rsi: buildIndicatorExplanation(props.response, 'rsi', t, dateLocale.value),
+  macd: buildIndicatorExplanation(props.response, 'macd', t, dateLocale.value),
+  atr: buildIndicatorExplanation(props.response, 'atr', t, dateLocale.value),
+  adx: buildIndicatorExplanation(props.response, 'adxDmi', t, dateLocale.value),
+  rvol: buildIndicatorExplanation(props.response, 'rvol', t, dateLocale.value),
+  relative: buildIndicatorExplanation(props.response, 'relativeStrength', t, dateLocale.value)
 }));
 
 function toChartTime(timestamp: number) {
@@ -430,37 +449,114 @@ onBeforeUnmount(() => {
 
     <div class="indicator-grid indicator-grid--chart mt-4">
       <v-card v-if="visibility.volume" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.volume.label }}</span><span>{{ panelMeta.volume.value }}</span></div>
+        <div class="metric-row indicator-panel__header mb-3">
+          <span class="indicator-panel__title">
+            <span class="muted-label">{{ panelMeta.volume.label }}</span>
+            <InfoPopoverButton
+              :title="panelMeta.volume.label"
+              :description="panelExplanations.volume.description"
+              :details="panelExplanations.volume.details"
+              :button-label="t('common.openInfoFor', { label: panelMeta.volume.label })"
+            />
+          </span>
+          <span>{{ panelMeta.volume.value }}</span>
+        </div>
         <div ref="volumeRef" class="chart-surface" style="height: 168px;" />
       </v-card>
 
       <v-card v-if="visibility.rsi" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.rsi.label }}</span><span>{{ panelMeta.rsi.value }}</span></div>
+        <div class="metric-row indicator-panel__header mb-3">
+          <span class="indicator-panel__title">
+            <span class="muted-label">{{ panelMeta.rsi.label }}</span>
+            <InfoPopoverButton
+              :title="panelMeta.rsi.label"
+              :description="panelExplanations.rsi.description"
+              :details="panelExplanations.rsi.details"
+              :button-label="t('common.openInfoFor', { label: panelMeta.rsi.label })"
+            />
+          </span>
+          <span>{{ panelMeta.rsi.value }}</span>
+        </div>
         <div ref="rsiRef" class="chart-surface" style="height: 168px;" />
       </v-card>
 
       <v-card v-if="visibility.macd" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.macd.label }}</span><span>{{ panelMeta.macd.value }}</span></div>
+        <div class="metric-row indicator-panel__header mb-3">
+          <span class="indicator-panel__title">
+            <span class="muted-label">{{ panelMeta.macd.label }}</span>
+            <InfoPopoverButton
+              :title="panelMeta.macd.label"
+              :description="panelExplanations.macd.description"
+              :details="panelExplanations.macd.details"
+              :button-label="t('common.openInfoFor', { label: panelMeta.macd.label })"
+            />
+          </span>
+          <span>{{ panelMeta.macd.value }}</span>
+        </div>
         <div ref="macdRef" class="chart-surface" style="height: 168px;" />
       </v-card>
 
       <v-card v-if="visibility.atr" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.atr.label }}</span><span>{{ panelMeta.atr.value }}</span></div>
+        <div class="metric-row indicator-panel__header mb-3">
+          <span class="indicator-panel__title">
+            <span class="muted-label">{{ panelMeta.atr.label }}</span>
+            <InfoPopoverButton
+              :title="panelMeta.atr.label"
+              :description="panelExplanations.atr.description"
+              :details="panelExplanations.atr.details"
+              :button-label="t('common.openInfoFor', { label: panelMeta.atr.label })"
+            />
+          </span>
+          <span>{{ panelMeta.atr.value }}</span>
+        </div>
         <div ref="atrRef" class="chart-surface" style="height: 168px;" />
       </v-card>
 
       <v-card v-if="visibility.adxDmi" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.adx.label }}</span><span>{{ panelMeta.adx.value }}</span></div>
+        <div class="metric-row indicator-panel__header mb-3">
+          <span class="indicator-panel__title">
+            <span class="muted-label">{{ panelMeta.adx.label }}</span>
+            <InfoPopoverButton
+              :title="panelMeta.adx.label"
+              :description="panelExplanations.adx.description"
+              :details="panelExplanations.adx.details"
+              :button-label="t('common.openInfoFor', { label: panelMeta.adx.label })"
+            />
+          </span>
+          <span>{{ panelMeta.adx.value }}</span>
+        </div>
         <div ref="adxRef" class="chart-surface" style="height: 168px;" />
       </v-card>
 
       <v-card v-if="visibility.rvol" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.rvol.label }}</span><span>{{ panelMeta.rvol.value }}</span></div>
+        <div class="metric-row indicator-panel__header mb-3">
+          <span class="indicator-panel__title">
+            <span class="muted-label">{{ panelMeta.rvol.label }}</span>
+            <InfoPopoverButton
+              :title="panelMeta.rvol.label"
+              :description="panelExplanations.rvol.description"
+              :details="panelExplanations.rvol.details"
+              :button-label="t('common.openInfoFor', { label: panelMeta.rvol.label })"
+            />
+          </span>
+          <span>{{ panelMeta.rvol.value }}</span>
+        </div>
         <div ref="rvolRef" class="chart-surface" style="height: 168px;" />
       </v-card>
 
       <v-card v-if="visibility.relativeStrength" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.relative.label }}</span><span>{{ panelMeta.relative.value }}</span></div>
+        <div class="metric-row indicator-panel__header mb-3">
+          <span class="indicator-panel__title">
+            <span class="muted-label">{{ panelMeta.relative.label }}</span>
+            <InfoPopoverButton
+              :title="panelMeta.relative.label"
+              :description="panelExplanations.relative.description"
+              :details="panelExplanations.relative.details"
+              :button-label="t('common.openInfoFor', { label: panelMeta.relative.label })"
+            />
+          </span>
+          <span>{{ panelMeta.relative.value }}</span>
+        </div>
         <div ref="relativeRef" class="chart-surface" style="height: 168px;" />
       </v-card>
     </div>

@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { SignalCategoryKey, SignalSummary } from '@shared/market';
+import InfoPopoverButton from '@/components/InfoPopoverButton.vue';
+import { buildSignalCategoryExplanation, buildSummaryOverviewExplanation } from '@/utils/explanations';
 import { localizeSignalCategory, localizeSignalCategoryStatus, useI18n } from '@/utils/i18n';
 
 const props = defineProps<{
   summary: SignalSummary;
 }>();
 const { t } = useI18n();
+const summaryExplanation = computed(() => buildSummaryOverviewExplanation(props.summary, t));
+function getCategoryExplanation(key: SignalCategoryKey, category: SignalSummary['categories'][SignalCategoryKey]) {
+  return buildSignalCategoryExplanation(key, category, t);
+}
 
 const icon = computed(() => {
   switch (props.summary.bias) {
@@ -54,7 +60,15 @@ const orderedCategories = computed(() =>
         <v-icon :icon="icon" :color="tone" />
       </v-avatar>
       <div>
-        <div style="font-size: 1.1rem; font-weight: 800;">{{ t(`summary.bias.${summary.bias}`) }}</div>
+        <div class="indicator-label-row" style="font-size: 1.1rem; font-weight: 800;">
+          <span>{{ t(`summary.bias.${summary.bias}`) }}</span>
+          <InfoPopoverButton
+            :title="t('summary.title')"
+            :description="summaryExplanation.description"
+            :details="summaryExplanation.details"
+            :button-label="t('common.openInfoFor', { label: t('summary.title') })"
+          />
+        </div>
         <div class="text-medium-emphasis" style="font-size: 0.82rem;">
           {{ t('summary.confidence') }} {{ t(`summary.confidence.${summary.confidence}`) }}
         </div>
@@ -87,7 +101,15 @@ const orderedCategories = computed(() =>
         class="summary-category"
       >
         <div class="d-flex align-center justify-space-between ga-3">
-          <span style="font-weight: 700;">{{ localizeSignalCategory(key) }}</span>
+          <span class="indicator-label-row">
+            <span style="font-weight: 700;">{{ localizeSignalCategory(key) }}</span>
+            <InfoPopoverButton
+              :title="localizeSignalCategory(key)"
+              :description="getCategoryExplanation(key, category).description"
+              :details="getCategoryExplanation(key, category).details"
+              :button-label="t('common.openInfoFor', { label: localizeSignalCategory(key) })"
+            />
+          </span>
           <span class="helper-chip" style="padding: 6px 10px;">{{ category.weight.toFixed(0) }}%</span>
         </div>
         <div class="text-medium-emphasis mt-2" style="font-size: 0.82rem;">
