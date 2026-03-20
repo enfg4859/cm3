@@ -1,12 +1,13 @@
 import { createError, defineEventHandler, getQuery } from 'h3';
 import { candlesQuerySchema } from '@shared/schemas';
-import type { CandlesResponse } from '@shared/market';
+import type { BenchmarkSymbol, CandlesResponse, OpeningRangeMinutes } from '@shared/market';
 import { withCache } from '../../utils/cache';
 import { getVisibleBarCount } from '../../utils/market';
-import { buildSignalSummary, calculateIndicators, trimIndicators } from '../../utils/indicators';
+import { buildAnalysis } from '../../utils/indicators';
 import { getMarketDataProvider } from '../../utils/provider';
 
 const WARMUP_BARS = 220;
+const ONE_MINUTE_SESSION_WARMUP = 390;
 
 export default defineEventHandler(async (event): Promise<CandlesResponse> => {
   const parsed = candlesQuerySchema.safeParse(getQuery(event));
@@ -19,35 +20,88 @@ export default defineEventHandler(async (event): Promise<CandlesResponse> => {
   }
 
   const provider = getMarketDataProvider();
-  const { symbol, range, interval } = parsed.data;
-  const cacheKey = `candles:${provider.id}:${symbol}:${range}:${interval}`;
+  const instrument = await provider.getInstrument(parsed.data.symbol);
+  const benchmark =
+    instrument.supportsRelativeStrength ? (parsed.data.benchmark ?? 'SPY') : (null as BenchmarkSymbol | null);
+  const orMinutes =
+    parsed.data.orMinutes ?? (parsed.data.mode === 'intraday' ? (15 as OpeningRangeMinutes) : null);
+  const visibleBars = getVisibleBarCount(parsed.data.range, parsed.data.interval);
+  const cacheKey = [
+    'candles',
+    provider.id,
+    parsed.data.symbol,
+    parsed.data.range,
+    parsed.data.interval,
+    parsed.data.mode,
+    parsed.data.session,
+    benchmark ?? 'none',
+    orMinutes ?? 'none',
+    parsed.data.anchorType,
+    parsed.data.anchorTime ?? 'auto'
+  ].join(':');
 
   const { value, cached } = await withCache(cacheKey, async () => {
-    const rawCandles = await provider.getCandles({
-      symbol,
-      range,
-      interval,
-      warmupBars: WARMUP_BARS
+    const [rawCandles, benchmarkCandles, openingRangeCandles] = await Promise.all([
+      provider.getCandles({
+        symbol: parsed.data.symbol,
+        range: parsed.data.range,
+        interval: parsed.data.interval,
+        warmupBars: WARMUP_BARS,
+        sessionType: parsed.data.session
+      }),
+      benchmark
+        ? provider.getCandles({
+            symbol: benchmark,
+            range: parsed.data.range,
+            interval: parsed.data.interval,
+            warmupBars: WARMUP_BARS,
+            sessionType: parsed.data.session
+          }).catch(() => undefined)
+        : Promise.resolve(undefined),
+      parsed.data.mode === 'intraday' && orMinutes
+        ? provider
+            .getCandles({
+              symbol: parsed.data.symbol,
+              range: '1D',
+              interval: '1min',
+              warmupBars: ONE_MINUTE_SESSION_WARMUP,
+              sessionType: parsed.data.session
+            })
+            .catch(() => undefined)
+        : Promise.resolve(undefined)
+    ]);
+
+    return buildAnalysis({
+      rawCandles,
+      visibleBars,
+      instrument,
+      range: parsed.data.range,
+      interval: parsed.data.interval,
+      mode: parsed.data.mode,
+      sessionType: parsed.data.session,
+      benchmark,
+      orMinutes,
+      anchorType: parsed.data.anchorType,
+      anchorTime: parsed.data.anchorTime ?? null,
+      benchmarkCandles,
+      openingRangeCandles
     });
-
-    const indicators = calculateIndicators(rawCandles);
-    const visibleBars = getVisibleBarCount(range, interval);
-    const candles = rawCandles.slice(-visibleBars);
-    const visibleIndicators = trimIndicators(indicators, candles.length);
-
-    return {
-      candles,
-      indicators: visibleIndicators,
-      signalSummary: buildSignalSummary(candles, visibleIndicators)
-    };
   });
 
   return {
-    symbol,
-    range,
-    interval,
+    symbol: parsed.data.symbol,
+    range: parsed.data.range,
+    interval: parsed.data.interval,
+    mode: parsed.data.mode,
+    session: parsed.data.session,
+    benchmark,
+    orMinutes,
+    anchorType: value.analysisContext.anchor.anchorType,
+    anchorTime: value.analysisContext.anchor.anchorTime,
+    instrument,
     candles: value.candles,
     indicators: value.indicators,
+    analysisContext: value.analysisContext,
     signalSummary: value.signalSummary,
     provider: provider.id,
     cached

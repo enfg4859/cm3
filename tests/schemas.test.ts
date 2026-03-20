@@ -10,7 +10,10 @@ describe('query schemas', () => {
     expect(candlesQuerySchema.parse({ symbol: 'nvda' })).toEqual({
       symbol: 'NVDA',
       range: '3M',
-      interval: '1day'
+      interval: '1day',
+      mode: 'swing',
+      session: 'regular',
+      anchorType: 'gap'
     });
   });
 

@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { INTERVAL_OPTIONS, RANGE_OPTIONS } from './market';
+import {
+  ANALYSIS_MODE_OPTIONS,
+  ANCHOR_TYPE_OPTIONS,
+  BENCHMARK_OPTIONS,
+  INTERVAL_OPTIONS,
+  OPENING_RANGE_OPTIONS,
+  RANGE_OPTIONS,
+  SESSION_OPTIONS
+} from './market';
 
 const symbolSchema = z
   .string()
@@ -20,7 +28,19 @@ export const quoteQuerySchema = z.object({
 export const candlesQuerySchema = z.object({
   symbol: symbolSchema,
   range: z.enum(RANGE_OPTIONS).default('3M'),
-  interval: z.enum(INTERVAL_OPTIONS).default('1day')
+  interval: z.enum(INTERVAL_OPTIONS).default('1day'),
+  mode: z.enum(ANALYSIS_MODE_OPTIONS).default('swing'),
+  session: z.enum(SESSION_OPTIONS).default('regular'),
+  benchmark: z.enum(BENCHMARK_OPTIONS).optional().nullable(),
+  orMinutes: z
+    .coerce.number()
+    .refine((value) => OPENING_RANGE_OPTIONS.includes(value as (typeof OPENING_RANGE_OPTIONS)[number]), {
+      message: 'Invalid opening range minutes.'
+    })
+    .transform((value) => value as (typeof OPENING_RANGE_OPTIONS)[number])
+    .optional(),
+  anchorType: z.enum(ANCHOR_TYPE_OPTIONS).default('gap'),
+  anchorTime: z.coerce.number().int().positive().optional()
 });
 
 export type SearchQuery = z.infer<typeof searchQuerySchema>;

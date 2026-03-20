@@ -283,27 +283,10 @@ export function translateErrorMessage(message: string | null) {
 }
 
 export function localizeSignalSummary(summary: SignalSummary) {
-  const metricChips = [
-    t(`summary.metric.emaTrend.${summary.metrics.emaTrend}`),
-    t(`summary.metric.rsiState.${summary.metrics.rsiState}`),
-    t(`summary.metric.macdState.${summary.metrics.macdState}`),
-    t(`summary.metric.volatilityState.${summary.metrics.volatilityState}`)
-  ];
-
-  const bullets =
-    localeRef.value === 'ko'
-      ? [
-          t(`summary.bullet.emaTrend.${summary.metrics.emaTrend}`),
-          t(`summary.bullet.rsiState.${summary.metrics.rsiState}`),
-          t(`summary.bullet.macdState.${summary.metrics.macdState}`),
-          t(`summary.bullet.volatilityState.${summary.metrics.volatilityState}`)
-        ]
-      : summary.bullets;
-
   return {
-    label: t(`summary.bias.${summary.bias}`),
+    label: summary.label,
     confidence: t(`summary.confidence.${summary.confidence}`),
-    metricChips,
-    bullets
+    metricChips: [],
+    bullets: summary.bullets
   };
 }

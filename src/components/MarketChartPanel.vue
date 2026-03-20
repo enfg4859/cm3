@@ -17,20 +17,32 @@ import { useI18n } from '@/utils/i18n';
 const props = defineProps<{
   response: CandlesResponse;
   visibility: IndicatorVisibility;
+  manualAnchorArmed?: boolean;
 }>();
+
+const emit = defineEmits<{
+  anchorSelected: [time: number];
+}>();
+
 const { dateLocale, t } = useI18n();
-type SubPanelKey = 'volume' | 'rsi' | 'macd' | 'atr';
 
 const priceRef = ref<HTMLDivElement | null>(null);
 const volumeRef = ref<HTMLDivElement | null>(null);
 const rsiRef = ref<HTMLDivElement | null>(null);
 const macdRef = ref<HTMLDivElement | null>(null);
 const atrRef = ref<HTMLDivElement | null>(null);
+const adxRef = ref<HTMLDivElement | null>(null);
+const rvolRef = ref<HTMLDivElement | null>(null);
+const relativeRef = ref<HTMLDivElement | null>(null);
 
 let charts: Array<{ chart: IChartApi; container: HTMLDivElement }> = [];
 let resizeObserver: ResizeObserver | null = null;
 
 const latestCandle = computed(() => props.response.candles.at(-1));
+
+function lastPoint<T extends { time: number; value: number | null }>(series: T[]) {
+  return [...series].reverse().find((entry) => entry.value !== null);
+}
 
 const legendItems = computed(() => {
   const items: Array<{ label: string; value: string; color: string }> = [];
@@ -38,10 +50,6 @@ const legendItems = computed(() => {
 
   if (!latest) {
     return items;
-  }
-
-  function lastPoint<T extends { time: number; value: number | null }>(series: T[]) {
-    return [...series].reverse().find((entry) => entry.value !== null);
   }
 
   if (props.visibility.ema20) {
@@ -65,13 +73,17 @@ const legendItems = computed(() => {
     }
   }
 
-  if (props.visibility.bollinger) {
-    const point = [...props.response.indicators.bollinger]
-      .reverse()
-      .find((entry) => entry.middle !== null);
+  if (props.visibility.vwap) {
+    const point = lastPoint(props.response.indicators.vwap);
+    if (point?.value !== null && point?.value !== undefined) {
+      items.push({ label: 'VWAP', value: point.value.toFixed(2), color: '#ffcb77' });
+    }
+  }
 
-    if (point?.middle !== null && point?.middle !== undefined) {
-      items.push({ label: t('chart.legend.bbMid'), value: point.middle.toFixed(2), color: '#908fa0' });
+  if (props.visibility.anchoredVwap) {
+    const point = lastPoint(props.response.indicators.anchoredVwap);
+    if (point?.value !== null && point?.value !== undefined) {
+      items.push({ label: 'AVWAP', value: point.value.toFixed(2), color: '#ff8c42' });
     }
   }
 
@@ -84,60 +96,48 @@ const legendItems = computed(() => {
   return items;
 });
 
-const activeSubPanels = computed(() => [
-  {
-    key: 'volume',
+const panelMeta = computed(() => ({
+  volume: {
     label: t('chart.panel.volume'),
     value: latestCandle.value ? formatCompactNumber(latestCandle.value.volume, dateLocale.value) : '--',
-    active: props.visibility.volume
+    description: t('chart.panel.info.volume')
   },
-  {
-    key: 'rsi',
+  rsi: {
     label: t('chart.panel.rsi'),
-    value:
-      [...props.response.indicators.rsi14].reverse().find((entry) => entry.value !== null)?.value?.toFixed(2) ??
-      '--',
-    active: props.visibility.rsi
+    value: lastPoint(props.response.indicators.rsi14)?.value?.toFixed(2) ?? '--',
+    description: t('chart.panel.info.rsi')
   },
-  {
-    key: 'macd',
+  macd: {
     label: t('chart.panel.macd'),
-    value:
-      [...props.response.indicators.macd].reverse().find((entry) => entry.histogram !== null)?.histogram?.toFixed(2) ??
-      '--',
-    active: props.visibility.macd
+    value: [...props.response.indicators.macd].reverse().find((entry) => entry.histogram !== null)?.histogram?.toFixed(2) ?? '--',
+    description: t('chart.panel.info.macd')
   },
-  {
-    key: 'atr',
+  atr: {
     label: t('chart.panel.atr'),
-    value:
-      [...props.response.indicators.atr14].reverse().find((entry) => entry.value !== null)?.value?.toFixed(2) ??
-      '--',
-    active: props.visibility.atr
+    value: lastPoint(props.response.indicators.atr14)?.value?.toFixed(2) ?? '--',
+    description: t('chart.panel.info.atr')
+  },
+  adx: {
+    label: 'ADX / DMI',
+    value: [...props.response.indicators.adxDmi14].reverse().find((entry) => entry.adx !== null)?.adx?.toFixed(2) ?? '--',
+    description: 'ADX와 +DI/-DI로 추세 강도와 방향 우위를 함께 봅니다.'
+  },
+  rvol: {
+    label:
+      props.response.analysisContext.participationMode === 'rvol_tod'
+        ? 'RVOL-TOD'
+        : props.response.analysisContext.participationMode === 'rvol_classic'
+          ? 'RVOL'
+          : 'RVOL unavailable',
+    value: lastPoint(props.response.indicators.rvol20)?.value?.toFixed(2) ?? '--',
+    description: '현재 시점의 거래량 참여도가 평소보다 얼마나 이례적인지 보여줍니다.'
+  },
+  relative: {
+    label: 'RS Line',
+    value: lastPoint(props.response.indicators.relativeStrength)?.value?.toFixed(4) ?? '--',
+    description: 'SPY/QQQ 대비 상대 강도를 추적합니다.'
   }
-].filter((panel) => panel.active));
-
-const subPanelMeta = computed(() => {
-  const values = new Map(activeSubPanels.value.map((panel) => [panel.key as SubPanelKey, panel.value]));
-
-  function createPanelMeta(key: SubPanelKey) {
-    const label = t(`chart.panel.${key}`);
-
-    return {
-      label,
-      value: values.get(key) ?? '--',
-      description: t(`chart.panel.info.${key}`),
-      infoLabel: t('chart.panel.infoLabel', { label })
-    };
-  }
-
-  return {
-    volume: createPanelMeta('volume'),
-    rsi: createPanelMeta('rsi'),
-    macd: createPanelMeta('macd'),
-    atr: createPanelMeta('atr')
-  };
-});
+}));
 
 function toChartTime(timestamp: number) {
   return timestamp as UTCTimestamp;
@@ -154,31 +154,18 @@ function createBaseChart(container: HTMLDivElement, height: number) {
     width: container.clientWidth,
     height,
     layout: {
-      background: {
-        type: ColorType.Solid,
-        color: '#0b1326'
-      },
+      background: { type: ColorType.Solid, color: '#0b1326' },
       textColor: '#c7c4d7',
       fontFamily: 'Inter'
     },
     grid: {
-      vertLines: {
-        color: 'rgba(70, 69, 84, 0.10)'
-      },
-      horzLines: {
-        color: 'rgba(70, 69, 84, 0.10)'
-      }
+      vertLines: { color: 'rgba(70, 69, 84, 0.10)' },
+      horzLines: { color: 'rgba(70, 69, 84, 0.10)' }
     },
     crosshair: {
       mode: CrosshairMode.Normal,
-      vertLine: {
-        color: 'rgba(192, 193, 255, 0.18)',
-        labelBackgroundColor: '#2d3449'
-      },
-      horzLine: {
-        color: 'rgba(192, 193, 255, 0.18)',
-        labelBackgroundColor: '#2d3449'
-      }
+      vertLine: { color: 'rgba(192, 193, 255, 0.18)', labelBackgroundColor: '#2d3449' },
+      horzLine: { color: 'rgba(192, 193, 255, 0.18)', labelBackgroundColor: '#2d3449' }
     },
     rightPriceScale: {
       borderVisible: false,
@@ -189,9 +176,7 @@ function createBaseChart(container: HTMLDivElement, height: number) {
       timeVisible: props.response.interval !== '1day',
       secondsVisible: false
     },
-    localization: {
-      locale: dateLocale.value
-    }
+    localization: { locale: dateLocale.value }
   });
 }
 
@@ -253,73 +238,67 @@ function setupPriceChart() {
   );
 
   if (props.visibility.ema20) {
-    const series = chart.addSeries(LineSeries, {
-      color: '#c0c1ff',
-      lineWidth: 2,
-      priceLineVisible: false,
-      lastValueVisible: false
-    });
+    const series = chart.addSeries(LineSeries, { color: '#c0c1ff', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
     series.setData(mapLineSeries(props.response.indicators.ema20));
   }
 
   if (props.visibility.ema50) {
-    const series = chart.addSeries(LineSeries, {
-      color: '#4edea3',
-      lineWidth: 2,
-      priceLineVisible: false,
-      lastValueVisible: false
-    });
+    const series = chart.addSeries(LineSeries, { color: '#4edea3', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
     series.setData(mapLineSeries(props.response.indicators.ema50));
   }
 
   if (props.visibility.ema200) {
-    const series = chart.addSeries(LineSeries, {
-      color: '#8083ff',
-      lineWidth: 2,
-      priceLineVisible: false,
-      lastValueVisible: false
-    });
+    const series = chart.addSeries(LineSeries, { color: '#8083ff', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
     series.setData(mapLineSeries(props.response.indicators.ema200));
   }
 
   if (props.visibility.bollinger) {
-    const upper = chart.addSeries(LineSeries, {
-      color: 'rgba(144, 143, 160, 0.88)',
-      lineWidth: 1,
-      lineStyle: LineStyle.Dashed,
-      priceLineVisible: false,
-      lastValueVisible: false
-    });
-    const middle = chart.addSeries(LineSeries, {
-      color: 'rgba(144, 143, 160, 0.44)',
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false
-    });
-    const lower = chart.addSeries(LineSeries, {
-      color: 'rgba(144, 143, 160, 0.88)',
-      lineWidth: 1,
-      lineStyle: LineStyle.Dashed,
-      priceLineVisible: false,
-      lastValueVisible: false
-    });
+    const upper = chart.addSeries(LineSeries, { color: 'rgba(144, 143, 160, 0.88)', lineWidth: 1, lineStyle: LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false });
+    const middle = chart.addSeries(LineSeries, { color: 'rgba(144, 143, 160, 0.44)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+    const lower = chart.addSeries(LineSeries, { color: 'rgba(144, 143, 160, 0.88)', lineWidth: 1, lineStyle: LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false });
 
-    upper.setData(
-      props.response.indicators.bollinger
-        .filter((point) => point.upper !== null)
-        .map((point) => ({ time: toChartTime(point.time), value: point.upper as number }))
-    );
-    middle.setData(
-      props.response.indicators.bollinger
-        .filter((point) => point.middle !== null)
-        .map((point) => ({ time: toChartTime(point.time), value: point.middle as number }))
-    );
-    lower.setData(
-      props.response.indicators.bollinger
-        .filter((point) => point.lower !== null)
-        .map((point) => ({ time: toChartTime(point.time), value: point.lower as number }))
-    );
+    upper.setData(props.response.indicators.bollinger.filter((point) => point.upper !== null).map((point) => ({ time: toChartTime(point.time), value: point.upper as number })));
+    middle.setData(props.response.indicators.bollinger.filter((point) => point.middle !== null).map((point) => ({ time: toChartTime(point.time), value: point.middle as number })));
+    lower.setData(props.response.indicators.bollinger.filter((point) => point.lower !== null).map((point) => ({ time: toChartTime(point.time), value: point.lower as number })));
   }
+
+  if (props.visibility.vwap) {
+    const series = chart.addSeries(LineSeries, { color: '#ffcb77', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+    series.setData(mapLineSeries(props.response.indicators.vwap));
+  }
+
+  if (props.visibility.anchoredVwap) {
+    const series = chart.addSeries(LineSeries, { color: '#ff8c42', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+    series.setData(mapLineSeries(props.response.indicators.anchoredVwap));
+  }
+
+  if (props.visibility.pdhPdl) {
+    const { high, low } = props.response.analysisContext.previousDay;
+    if (high !== null) {
+      candlesSeries.createPriceLine({ price: high, color: 'rgba(106, 225, 255, 0.75)', lineStyle: LineStyle.Dashed, lineWidth: 1, axisLabelVisible: false, title: 'PDH' });
+    }
+    if (low !== null) {
+      candlesSeries.createPriceLine({ price: low, color: 'rgba(106, 225, 255, 0.45)', lineStyle: LineStyle.Dashed, lineWidth: 1, axisLabelVisible: false, title: 'PDL' });
+    }
+  }
+
+  if (props.visibility.openingRange && props.response.analysisContext.openingRange.status === 'ready') {
+    const { high, low } = props.response.analysisContext.openingRange;
+    if (high !== null) {
+      candlesSeries.createPriceLine({ price: high, color: 'rgba(255, 209, 102, 0.85)', lineStyle: LineStyle.Dotted, lineWidth: 1, axisLabelVisible: false, title: 'ORH' });
+    }
+    if (low !== null) {
+      candlesSeries.createPriceLine({ price: low, color: 'rgba(255, 209, 102, 0.55)', lineStyle: LineStyle.Dotted, lineWidth: 1, axisLabelVisible: false, title: 'ORL' });
+    }
+  }
+
+  chart.subscribeClick((param) => {
+    if (!props.manualAnchorArmed || !param.time) {
+      return;
+    }
+
+    emit('anchorSelected', Number(param.time));
+  });
 
   chart.timeScale().fitContent();
 }
@@ -331,16 +310,8 @@ function setupVolumeChart() {
 
   const chart = createBaseChart(volumeRef.value, 168);
   registerChart(chart, volumeRef.value);
-  chart.priceScale('right').applyOptions({
-    scaleMargins: { top: 0.18, bottom: 0 }
-  });
-
-  const series = chart.addSeries(HistogramSeries, {
-    priceFormat: { type: 'volume' },
-    priceLineVisible: false,
-    lastValueVisible: false
-  });
-
+  chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.18, bottom: 0 } });
+  const series = chart.addSeries(HistogramSeries, { priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false });
   series.setData(
     props.response.candles.map((candle) => ({
       time: toChartTime(candle.time),
@@ -350,111 +321,67 @@ function setupVolumeChart() {
   );
 }
 
-function setupRsiChart() {
-  if (!rsiRef.value || !props.visibility.rsi) {
+function setupLinePanel(refEl: HTMLDivElement | null, series: Array<{ time: number; value: number | null }>, color: string, height = 168) {
+  if (!refEl) {
     return;
   }
 
+  const chart = createBaseChart(refEl, height);
+  registerChart(chart, refEl);
+  const line = chart.addSeries(LineSeries, { color, lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+  line.setData(mapLineSeries(series));
+}
+
+function setupRsiChart() {
+  if (!rsiRef.value || !props.visibility.rsi) return;
   const chart = createBaseChart(rsiRef.value, 168);
   registerChart(chart, rsiRef.value);
-  chart.priceScale('right').applyOptions({
-    autoScale: false,
-    scaleMargins: { top: 0.1, bottom: 0.1 }
-  });
-
-  const series = chart.addSeries(LineSeries, {
-    color: '#c0c1ff',
-    lineWidth: 2,
-    priceLineVisible: false,
-    lastValueVisible: false
-  });
-
+  chart.priceScale('right').applyOptions({ autoScale: false, scaleMargins: { top: 0.1, bottom: 0.1 } });
+  const series = chart.addSeries(LineSeries, { color: '#c0c1ff', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
   series.setData(mapLineSeries(props.response.indicators.rsi14));
-  series.createPriceLine({
-    price: 70,
-    color: 'rgba(255, 81, 106, 0.42)',
-    lineWidth: 1,
-    lineStyle: LineStyle.Dashed,
-    axisLabelVisible: false,
-    title: '70'
-  });
-  series.createPriceLine({
-    price: 30,
-    color: 'rgba(78, 222, 163, 0.42)',
-    lineWidth: 1,
-    lineStyle: LineStyle.Dashed,
-    axisLabelVisible: false,
-    title: '30'
-  });
+  series.createPriceLine({ price: 70, color: 'rgba(255,81,106,0.42)', lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: false, title: '70' });
+  series.createPriceLine({ price: 30, color: 'rgba(78,222,163,0.42)', lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: false, title: '30' });
 }
 
 function setupMacdChart() {
-  if (!macdRef.value || !props.visibility.macd) {
-    return;
-  }
-
+  if (!macdRef.value || !props.visibility.macd) return;
   const chart = createBaseChart(macdRef.value, 168);
   registerChart(chart, macdRef.value);
-  chart.priceScale('right').applyOptions({
-    scaleMargins: { top: 0.2, bottom: 0.18 }
-  });
-
-  const histogram = chart.addSeries(HistogramSeries, {
-    priceLineVisible: false,
-    lastValueVisible: false
-  });
-  const macdLine = chart.addSeries(LineSeries, {
-    color: '#c0c1ff',
-    lineWidth: 2,
-    priceLineVisible: false,
-    lastValueVisible: false
-  });
-  const signalLine = chart.addSeries(LineSeries, {
-    color: '#ff516a',
-    lineWidth: 2,
-    priceLineVisible: false,
-    lastValueVisible: false
-  });
-
-  histogram.setData(
-    props.response.indicators.macd
-      .filter((point) => point.histogram !== null)
-      .map((point) => ({
-        time: toChartTime(point.time),
-        value: point.histogram as number,
-        color:
-          (point.histogram ?? 0) >= 0 ? 'rgba(78, 222, 163, 0.42)' : 'rgba(255, 81, 106, 0.42)'
-      }))
-  );
-
-  macdLine.setData(
-    props.response.indicators.macd
-      .filter((point) => point.macd !== null)
-      .map((point) => ({ time: toChartTime(point.time), value: point.macd as number }))
-  );
-  signalLine.setData(
-    props.response.indicators.macd
-      .filter((point) => point.signal !== null)
-      .map((point) => ({ time: toChartTime(point.time), value: point.signal as number }))
-  );
+  chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.2, bottom: 0.18 } });
+  const histogram = chart.addSeries(HistogramSeries, { priceLineVisible: false, lastValueVisible: false });
+  const macdLine = chart.addSeries(LineSeries, { color: '#c0c1ff', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+  const signalLine = chart.addSeries(LineSeries, { color: '#ff516a', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+  histogram.setData(props.response.indicators.macd.filter((point) => point.histogram !== null).map((point) => ({ time: toChartTime(point.time), value: point.histogram as number, color: (point.histogram ?? 0) >= 0 ? 'rgba(78, 222, 163, 0.42)' : 'rgba(255, 81, 106, 0.42)' })));
+  macdLine.setData(props.response.indicators.macd.filter((point) => point.macd !== null).map((point) => ({ time: toChartTime(point.time), value: point.macd as number })));
+  signalLine.setData(props.response.indicators.macd.filter((point) => point.signal !== null).map((point) => ({ time: toChartTime(point.time), value: point.signal as number })));
 }
 
 function setupAtrChart() {
-  if (!atrRef.value || !props.visibility.atr) {
-    return;
-  }
+  if (!atrRef.value || !props.visibility.atr) return;
+  setupLinePanel(atrRef.value, props.response.indicators.atr14, '#ffb2b7');
+}
 
-  const chart = createBaseChart(atrRef.value, 168);
-  registerChart(chart, atrRef.value);
+function setupAdxChart() {
+  if (!adxRef.value || !props.visibility.adxDmi) return;
+  const chart = createBaseChart(adxRef.value, 168);
+  registerChart(chart, adxRef.value);
+  const adx = chart.addSeries(LineSeries, { color: '#ff9f6e', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+  const plus = chart.addSeries(LineSeries, { color: '#4edea3', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+  const minus = chart.addSeries(LineSeries, { color: '#ff516a', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+  adx.setData(props.response.indicators.adxDmi14.filter((point) => point.adx !== null).map((point) => ({ time: toChartTime(point.time), value: point.adx as number })));
+  plus.setData(props.response.indicators.adxDmi14.filter((point) => point.plusDi !== null).map((point) => ({ time: toChartTime(point.time), value: point.plusDi as number })));
+  minus.setData(props.response.indicators.adxDmi14.filter((point) => point.minusDi !== null).map((point) => ({ time: toChartTime(point.time), value: point.minusDi as number })));
+  adx.createPriceLine({ price: props.response.analysisContext.adxHeuristicThreshold, color: 'rgba(255,159,110,0.32)', lineStyle: LineStyle.Dashed, lineWidth: 1, axisLabelVisible: false, title: String(props.response.analysisContext.adxHeuristicThreshold) });
+}
 
-  const series = chart.addSeries(LineSeries, {
-    color: '#ffb2b7',
-    lineWidth: 2,
-    priceLineVisible: false,
-    lastValueVisible: false
-  });
+function setupRvolChart() {
+  if (!rvolRef.value || !props.visibility.rvol) return;
+  setupLinePanel(rvolRef.value, props.response.indicators.rvol20, '#9bff8a');
+}
 
-  series.setData(mapLineSeries(props.response.indicators.atr14));
+function setupRelativeChart() {
+  if (!relativeRef.value || !props.visibility.relativeStrength) return;
+  setupLinePanel(relativeRef.value, props.response.indicators.relativeStrength, '#79a8ff');
 }
 
 function buildCharts() {
@@ -464,30 +391,19 @@ function buildCharts() {
   setupRsiChart();
   setupMacdChart();
   setupAtrChart();
+  setupAdxChart();
+  setupRvolChart();
+  setupRelativeChart();
 
   syncCharts(charts.map(({ chart }) => chart));
-
   resizeObserver = new ResizeObserver(() => {
-    charts.forEach(({ chart, container }) => {
-      chart.applyOptions({ width: container.clientWidth });
-    });
+    charts.forEach(({ chart, container }) => chart.applyOptions({ width: container.clientWidth }));
   });
-
   charts.forEach(({ container }) => resizeObserver?.observe(container));
 }
 
 watch(
-  () => [
-    props.response,
-    props.visibility.ema20,
-    props.visibility.ema50,
-    props.visibility.ema200,
-    props.visibility.bollinger,
-    props.visibility.volume,
-    props.visibility.rsi,
-    props.visibility.macd,
-    props.visibility.atr
-  ],
+  () => [props.response, props.visibility, props.manualAnchorArmed],
   async () => {
     await nextTick();
     buildCharts();
@@ -512,105 +428,40 @@ onBeforeUnmount(() => {
       <div ref="priceRef" class="chart-surface" />
     </div>
 
-    <div v-if="activeSubPanels.length" class="indicator-grid indicator-grid--chart mt-4">
-      <v-card
-        v-if="visibility.volume"
-        class="surface-panel surface-panel--high pa-4"
-        rounded="xl"
-      >
-        <div class="metric-row indicator-panel__header mb-3">
-          <div class="indicator-panel__title">
-            <span class="muted-label">{{ subPanelMeta.volume.label }}</span>
-            <v-tooltip content-class="indicator-tooltip" location="top" open-delay="120">
-              <template #activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  :aria-label="subPanelMeta.volume.infoLabel"
-                  class="indicator-panel__info"
-                  density="comfortable"
-                  icon="mdi-information-outline"
-                  size="x-small"
-                  variant="text"
-                />
-              </template>
-              <span>{{ subPanelMeta.volume.description }}</span>
-            </v-tooltip>
-          </div>
-          <span>{{ subPanelMeta.volume.value }}</span>
-        </div>
+    <div class="indicator-grid indicator-grid--chart mt-4">
+      <v-card v-if="visibility.volume" class="surface-panel surface-panel--high pa-4" rounded="xl">
+        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.volume.label }}</span><span>{{ panelMeta.volume.value }}</span></div>
         <div ref="volumeRef" class="chart-surface" style="height: 168px;" />
       </v-card>
 
       <v-card v-if="visibility.rsi" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3">
-          <div class="indicator-panel__title">
-            <span class="muted-label">{{ subPanelMeta.rsi.label }}</span>
-            <v-tooltip content-class="indicator-tooltip" location="top" open-delay="120">
-              <template #activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  :aria-label="subPanelMeta.rsi.infoLabel"
-                  class="indicator-panel__info"
-                  density="comfortable"
-                  icon="mdi-information-outline"
-                  size="x-small"
-                  variant="text"
-                />
-              </template>
-              <span>{{ subPanelMeta.rsi.description }}</span>
-            </v-tooltip>
-          </div>
-          <span>{{ subPanelMeta.rsi.value }}</span>
-        </div>
+        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.rsi.label }}</span><span>{{ panelMeta.rsi.value }}</span></div>
         <div ref="rsiRef" class="chart-surface" style="height: 168px;" />
       </v-card>
 
       <v-card v-if="visibility.macd" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3">
-          <div class="indicator-panel__title">
-            <span class="muted-label">{{ subPanelMeta.macd.label }}</span>
-            <v-tooltip content-class="indicator-tooltip" location="top" open-delay="120">
-              <template #activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  :aria-label="subPanelMeta.macd.infoLabel"
-                  class="indicator-panel__info"
-                  density="comfortable"
-                  icon="mdi-information-outline"
-                  size="x-small"
-                  variant="text"
-                />
-              </template>
-              <span>{{ subPanelMeta.macd.description }}</span>
-            </v-tooltip>
-          </div>
-          <span>{{ subPanelMeta.macd.value }}</span>
-        </div>
+        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.macd.label }}</span><span>{{ panelMeta.macd.value }}</span></div>
         <div ref="macdRef" class="chart-surface" style="height: 168px;" />
       </v-card>
 
       <v-card v-if="visibility.atr" class="surface-panel surface-panel--high pa-4" rounded="xl">
-        <div class="metric-row indicator-panel__header mb-3">
-          <div class="indicator-panel__title">
-            <span class="muted-label">{{ subPanelMeta.atr.label }}</span>
-            <v-tooltip content-class="indicator-tooltip" location="top" open-delay="120">
-              <template #activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  :aria-label="subPanelMeta.atr.infoLabel"
-                  class="indicator-panel__info"
-                  density="comfortable"
-                  icon="mdi-information-outline"
-                  size="x-small"
-                  variant="text"
-                />
-              </template>
-              <span>{{ subPanelMeta.atr.description }}</span>
-            </v-tooltip>
-          </div>
-          <span>{{ subPanelMeta.atr.value }}</span>
-        </div>
+        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.atr.label }}</span><span>{{ panelMeta.atr.value }}</span></div>
         <div ref="atrRef" class="chart-surface" style="height: 168px;" />
+      </v-card>
+
+      <v-card v-if="visibility.adxDmi" class="surface-panel surface-panel--high pa-4" rounded="xl">
+        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.adx.label }}</span><span>{{ panelMeta.adx.value }}</span></div>
+        <div ref="adxRef" class="chart-surface" style="height: 168px;" />
+      </v-card>
+
+      <v-card v-if="visibility.rvol" class="surface-panel surface-panel--high pa-4" rounded="xl">
+        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.rvol.label }}</span><span>{{ panelMeta.rvol.value }}</span></div>
+        <div ref="rvolRef" class="chart-surface" style="height: 168px;" />
+      </v-card>
+
+      <v-card v-if="visibility.relativeStrength" class="surface-panel surface-panel--high pa-4" rounded="xl">
+        <div class="metric-row indicator-panel__header mb-3"><span class="muted-label">{{ panelMeta.relative.label }}</span><span>{{ panelMeta.relative.value }}</span></div>
+        <div ref="relativeRef" class="chart-surface" style="height: 168px;" />
       </v-card>
     </div>
   </v-card>

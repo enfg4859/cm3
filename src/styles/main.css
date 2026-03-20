@@ -381,6 +381,27 @@ body {
   gap: 12px;
 }
 
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.score-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(19, 27, 46, 0.8);
+}
+
+.summary-category {
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(19, 27, 46, 0.76);
+}
+
 .tone-positive {
   color: var(--qa-success);
 }
@@ -494,6 +515,10 @@ body {
   }
 
   .indicator-grid--chart {
+    grid-template-columns: 1fr;
+  }
+
+  .score-grid {
     grid-template-columns: 1fr;
   }
 }

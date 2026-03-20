@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 async function waitForDashboard(page: import('@playwright/test').Page) {
-  await expect(page.getByText('Chart Meister')).toBeVisible();
+  await expect(page.getByRole('banner').getByText('Chart Meister')).toBeVisible();
   await expect(page.getByText('시그널 요약')).toBeVisible();
   await expect(page.locator('.chart-panel canvas').first()).toBeVisible();
 }
@@ -13,29 +13,32 @@ test.describe('dashboard', () => {
 
     await expect(page.getByRole('banner').getByText('모의 데이터')).toBeVisible();
     await expect(page.getByText('표시 레이어')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'RSI 14 설명' })).toBeVisible();
+    await expect(page.getByText('Analysis Context')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'intraday' })).toBeVisible();
     await expect.poll(() => page.locator('.chart-panel canvas').count()).toBeGreaterThan(0);
   });
 
-  test('shows indicator help tooltip on hover', async ({ page }) => {
+  test('shows analysis controls and session context', async ({ page }) => {
     await page.goto('/');
     await waitForDashboard(page);
 
-    await page.getByRole('button', { name: 'RSI 14 설명' }).hover();
-    await expect(page.getByText(/최근 14개 캔들의 상승 강도와 하락 강도/)).toBeVisible();
+    await expect(page.locator('.control-cluster').getByText('Mode')).toBeVisible();
+    await expect(page.locator('.control-cluster').getByText('Session', { exact: true })).toBeVisible();
+    await expect(page.locator('.control-cluster').getByText('Anchor')).toBeVisible();
+    await expect(page.getByText('Timezone', { exact: true })).toBeVisible();
   });
 
   test('switches between Korean and English', async ({ page }) => {
     await page.goto('/');
     await waitForDashboard(page);
 
-    await page.getByRole('button', { name: 'EN' }).click();
-    await expect(page.getByText('Chart Meister')).toBeVisible();
+    await page.getByRole('button', { name: 'EN', exact: true }).click();
+    await expect(page.getByRole('banner').getByText('Chart Meister')).toBeVisible();
     await expect(page.getByText('Signal Summary')).toBeVisible();
     await expect(page.getByPlaceholder('Search symbols: AAPL, NVDA, BTCUSD')).toBeVisible();
 
-    await page.getByRole('button', { name: 'KR' }).click();
-    await expect(page.getByText('Chart Meister')).toBeVisible();
+    await page.getByRole('button', { name: 'KR', exact: true }).click();
+    await expect(page.getByRole('banner').getByText('Chart Meister')).toBeVisible();
     await expect(page.getByText('시그널 요약')).toBeVisible();
   });
 
@@ -87,6 +90,6 @@ test.describe('dashboard', () => {
     await page.getByRole('button', { name: '1h', exact: true }).click();
     await intervalResponse;
 
-    await expect(page.getByText('1D / 1h')).toBeVisible();
+    await expect(page.getByText(/1D \/ 1h/)).toBeVisible();
   });
 });

@@ -1,5 +1,5 @@
 import { createError } from 'h3';
-import type { Candle, Quote, SearchResult } from '@shared/market';
+import type { AssetType, Candle, InstrumentMeta, Quote, SearchResult } from '@shared/market';
 import type { CandleRequest, MarketDataProvider } from './types';
 import { ensureAscendingCandles, getVisibleBarCount } from '../utils/market';
 
@@ -76,12 +76,56 @@ function toTimestamp(datetime: string) {
   });
 }
 
+function toAssetType(instrumentType?: string, exchange?: string): AssetType {
+  const normalizedType = instrumentType?.toLowerCase() ?? '';
+  const normalizedExchange = exchange?.toLowerCase() ?? '';
+
+  if (normalizedType.includes('etf')) {
+    return 'etf';
+  }
+
+  if (normalizedType.includes('crypto') || normalizedExchange.includes('crypto')) {
+    return 'crypto';
+  }
+
+  if (normalizedType.includes('forex') || normalizedType.includes('fx')) {
+    return 'fx';
+  }
+
+  if (normalizedType.includes('index')) {
+    return 'index';
+  }
+
+  if (normalizedType.includes('stock') || normalizedType.includes('equity')) {
+    return 'equity';
+  }
+
+  return 'other';
+}
+
+function toInstrumentMeta(symbol: string, name: string, exchange: string, instrumentType?: string): InstrumentMeta {
+  const assetType = toAssetType(instrumentType, exchange);
+  const isUsEquityLike = assetType === 'equity' || assetType === 'etf';
+  const isAlwaysOpen = assetType === 'crypto' || assetType === 'fx';
+
+  return {
+    symbol,
+    name,
+    exchange,
+    assetType,
+    exchangeTimezone: isUsEquityLike ? 'America/New_York' : 'UTC',
+    calendarId: isAlwaysOpen ? 'ALWAYS_OPEN' : 'US_EQUITIES',
+    supportsExtendedHours: isUsEquityLike,
+    supportsRelativeStrength: isUsEquityLike
+  };
+}
+
 export class TwelveDataProvider implements MarketDataProvider {
   readonly id = 'twelvedata' as const;
 
   constructor(private readonly apiKey: string) {}
 
-  private async request<T>(path: string, params: Record<string, string | number>) {
+  private async request<T>(path: string, params: Record<string, string | number | boolean>) {
     const url = new URL(`${API_BASE_URL}/${path}`);
     url.searchParams.set('apikey', this.apiKey);
 
@@ -134,10 +178,30 @@ export class TwelveDataProvider implements MarketDataProvider {
     }));
   }
 
-  async getQuote(symbol: string): Promise<Quote> {
-    const payload = await this.request<TwelveDataQuoteResponse>('quote', {
-      symbol: symbol.toUpperCase()
+  async getInstrument(symbol: string): Promise<InstrumentMeta> {
+    const payload = await this.request<TwelveDataSearchResponse>('symbol_search', {
+      symbol: symbol.toUpperCase(),
+      outputsize: 1
     });
+    const match = payload.data?.find((item) => item.symbol.toUpperCase() === symbol.toUpperCase()) ?? payload.data?.[0];
+
+    if (!match) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: `Unable to resolve instrument metadata for ${symbol.toUpperCase()}.`
+      });
+    }
+
+    return toInstrumentMeta(match.symbol, match.instrument_name, match.exchange, match.instrument_type);
+  }
+
+  async getQuote(symbol: string): Promise<Quote> {
+    const [payload, instrument] = await Promise.all([
+      this.request<TwelveDataQuoteResponse>('quote', {
+        symbol: symbol.toUpperCase()
+      }),
+      this.getInstrument(symbol)
+    ]);
 
     return {
       symbol: payload.symbol,
@@ -153,7 +217,11 @@ export class TwelveDataProvider implements MarketDataProvider {
       low: toNumber(payload.low),
       volume: toNumber(payload.volume),
       marketStatus: payload.is_market_open ? 'open' : 'closed',
-      updatedAt: Math.floor(Date.now() / 1000)
+      updatedAt: Math.floor(Date.now() / 1000),
+      assetType: instrument.assetType,
+      exchangeTimezone: instrument.exchangeTimezone,
+      calendarId: instrument.calendarId,
+      supportsExtendedHours: instrument.supportsExtendedHours
     };
   }
 
@@ -165,7 +233,8 @@ export class TwelveDataProvider implements MarketDataProvider {
       outputsize,
       format: 'JSON',
       order: 'DESC',
-      timezone: 'UTC'
+      timezone: 'UTC',
+      prepost: request.sessionType === 'extended'
     });
 
     if (!payload.values?.length) {

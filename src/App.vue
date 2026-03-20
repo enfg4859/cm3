@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
-import { INTERVAL_OPTIONS, RANGE_OPTIONS, type SearchResult } from '@shared/market';
+import {
+  ANALYSIS_MODE_OPTIONS,
+  ANCHOR_TYPE_OPTIONS,
+  BENCHMARK_OPTIONS,
+  INTERVAL_OPTIONS,
+  OPENING_RANGE_OPTIONS,
+  RANGE_OPTIONS,
+  SESSION_OPTIONS,
+  type SearchResult
+} from '@shared/market';
 import { formatCurrency, formatPercent, formatSignedCurrency, formatTimestamp } from '@/utils/format';
 import { translateErrorMessage, useI18n } from '@/utils/i18n';
 import { useMarketStore } from '@/stores/market';
@@ -26,6 +35,7 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 const quote = computed(() => store.quote);
 const signalSummary = computed(() => store.signalSummary);
+const analysisContext = computed(() => store.analysisContext);
 const isPositive = computed(() => (quote.value?.changePercent ?? 0) >= 0);
 const providerMode = computed(() =>
   store.providerLabel === 'twelvedata' && store.health?.apiConfigured ? t('provider.live') : t('provider.mock')
@@ -56,6 +66,10 @@ function handleSelect(result: SearchResult) {
 
 function handleRefresh() {
   void store.refresh();
+}
+
+function handleAnchorSelected(time: number) {
+  void store.setAnchorTime(time);
 }
 
 onMounted(() => {
@@ -191,7 +205,7 @@ onBeforeUnmount(() => {
           />
         </div>
 
-        <template v-else-if="quote && signalSummary && store.candlesResponse">
+        <template v-else-if="quote && signalSummary && store.candlesResponse && analysisContext">
           <section class="headline-strip">
             <v-card class="price-hero surface-panel" rounded="xl">
               <div class="muted-label mb-4">{{ quote.name }} • {{ quote.exchange }}</div>
@@ -250,18 +264,151 @@ onBeforeUnmount(() => {
                   </v-btn>
                 </div>
               </div>
+
+              <div>
+                <div class="muted-label mb-3">Mode</div>
+                <div class="pill-row">
+                  <v-btn
+                    v-for="mode in ANALYSIS_MODE_OPTIONS"
+                    :key="mode"
+                    class="pill-button"
+                    :class="{ 'pill-button--active': store.mode === mode }"
+                    @click="store.setMode(mode)"
+                  >
+                    {{ mode }}
+                  </v-btn>
+                </div>
+              </div>
+
+              <div class="indicator-grid">
+                <div>
+                  <div class="muted-label mb-3">Session</div>
+                  <div class="pill-row">
+                    <v-btn
+                      v-for="session in SESSION_OPTIONS"
+                      :key="session"
+                      class="pill-button"
+                      :class="{ 'pill-button--active': store.session === session }"
+                      @click="store.setSession(session)"
+                    >
+                      {{ session }}
+                    </v-btn>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="muted-label mb-3">Benchmark</div>
+                  <div class="pill-row">
+                    <v-btn
+                      v-for="benchmark in BENCHMARK_OPTIONS"
+                      :key="benchmark"
+                      class="pill-button"
+                      :class="{ 'pill-button--active': store.benchmark === benchmark }"
+                      @click="store.setBenchmark(benchmark)"
+                    >
+                      {{ benchmark }}
+                    </v-btn>
+                  </div>
+                </div>
+              </div>
+
+              <div class="indicator-grid">
+                <div>
+                  <div class="muted-label mb-3">Opening Range</div>
+                  <div class="pill-row">
+                    <v-btn
+                      class="pill-button"
+                      :class="{ 'pill-button--active': store.orMinutes === null }"
+                      @click="store.setOpeningRange(null)"
+                    >
+                      off
+                    </v-btn>
+                    <v-btn
+                      v-for="minutes in OPENING_RANGE_OPTIONS"
+                      :key="minutes"
+                      class="pill-button"
+                      :class="{ 'pill-button--active': store.orMinutes === minutes }"
+                      :disabled="!analysisContext.openingRange.allowedMinutes.includes(minutes)"
+                      @click="store.setOpeningRange(minutes)"
+                    >
+                      {{ minutes }}m
+                    </v-btn>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="muted-label mb-3">Anchor</div>
+                  <div class="pill-row">
+                    <v-btn
+                      v-for="anchorType in ANCHOR_TYPE_OPTIONS"
+                      :key="anchorType"
+                      class="pill-button"
+                      :class="{ 'pill-button--active': store.anchorType === anchorType }"
+                      @click="store.setAnchorType(anchorType)"
+                    >
+                      {{ anchorType }}
+                    </v-btn>
+                  </div>
+                  <div v-if="store.anchorType === 'manual'" class="text-medium-emphasis mt-2" style="font-size: 0.8rem;">
+                    {{ store.manualAnchorArmed ? '차트에서 anchor를 선택하세요.' : '수동 anchor를 다시 찍으려면 차트를 클릭하세요.' }}
+                  </div>
+                </div>
+              </div>
             </v-card>
           </section>
 
           <section class="dashboard-grid">
             <div class="workspace-column">
               <QuoteSummaryCards :quote="quote" />
-              <MarketChartPanel :response="store.candlesResponse" :visibility="store.visibility" />
+              <MarketChartPanel
+                :response="store.candlesResponse"
+                :visibility="store.visibility"
+                :manual-anchor-armed="store.manualAnchorArmed"
+                @anchor-selected="handleAnchorSelected"
+              />
             </div>
 
             <aside class="signal-column">
               <SignalSummaryCard :summary="signalSummary" />
               <IndicatorToggles :visibility="store.visibility" @toggle="store.toggleIndicator" />
+
+              <v-card class="surface-panel pa-6" rounded="xl">
+                <div class="muted-label mb-4">Analysis Context</div>
+                <div class="d-flex flex-column ga-4">
+                  <div class="metric-row">
+                    <span class="text-medium-emphasis">Session</span>
+                    <span>{{ analysisContext.sessionDefinition.sessionType }}</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="text-medium-emphasis">Timezone</span>
+                    <span>{{ analysisContext.sessionDefinition.exchangeTimezone }}</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="text-medium-emphasis">Early Close</span>
+                    <span>{{ analysisContext.sessionDefinition.isEarlyClose ? 'yes' : 'no' }}</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="text-medium-emphasis">Anchor</span>
+                    <span>{{ analysisContext.anchor.label }}</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="text-medium-emphasis">Relative</span>
+                    <span>
+                      {{
+                        analysisContext.relative.relativeNotApplicable
+                          ? 'not applicable'
+                          : analysisContext.relative.benchmarkUnavailable
+                            ? 'benchmark unavailable'
+                            : analysisContext.relative.benchmark ?? '--'
+                      }}
+                    </span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="text-medium-emphasis">Opening Range</span>
+                    <span>{{ analysisContext.openingRange.status }}</span>
+                  </div>
+                </div>
+              </v-card>
 
               <v-card class="surface-panel pa-6" rounded="xl">
                 <div class="muted-label mb-4">{{ t('execution.title') }}</div>
@@ -286,7 +433,7 @@ onBeforeUnmount(() => {
 
                 <div class="d-flex flex-wrap ga-2 mt-5">
                   <span class="helper-chip">{{ store.candlesResponse.provider }}</span>
-                  <span class="helper-chip">{{ store.range }} / {{ store.interval }}</span>
+                  <span class="helper-chip">{{ store.range }} / {{ store.interval }} / {{ store.mode }}</span>
                   <span class="helper-chip">{{ t('execution.validated') }}</span>
                   <span class="helper-chip">technicalindicators</span>
                 </div>
